@@ -4,5 +4,8 @@
 }
 
 body {
-  overflow: hidden;
+}
+
+p{
+  position: absolute;
 }

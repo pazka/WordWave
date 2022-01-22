@@ -1,50 +1,48 @@
-import { PerspectiveCamera, Scene, TextureLoader, Vector3, WebGLRenderer } from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { Sphere } from "./shapes";
+import {PerspectiveCamera, Scene, TextureLoader, Vector3, WebGLRenderer} from "three";
+import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import {Sphere} from "./shapes";
 import {TextSprite} from "./shapes/TextSprite";
 
-export class App {
-
-    private renderer: WebGLRenderer;
-    private scene: Scene;
-    private camera: PerspectiveCamera;
-    private controls: OrbitControls;
-
-    constructor(canvasElem: HTMLCanvasElement, width: number, height: number) {
-
-        this.scene = new Scene();
-        this.scene.background = new TextureLoader().load("./assets/textures/background.png");
-
-        this.camera = new PerspectiveCamera(50, width / height, 1, 1000);
-        this.camera.lookAt(new Vector3(0, 0, 0));
-        this.camera.position.z = 5;
-
-        this.renderer = new WebGLRenderer({
-            antialias: true,
-            canvas: canvasElem
-        });
-
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.target.set(0, 0, 0);
-        this.controls.update();
+class Text {
+    elem: HTMLElement
+    text : string
+    id: number
+    rnd : number = Math.random()
+    
+    constructor(text:string,id : number) {
+        this.elem = document.createElement('p')
+        this.elem.textContent = text
+        let body = document.getElementsByTagName('body')[0]
+        body.append(this.elem)
         
-        this.resize(width, height);
-        this.render();
+        this.id = id
+        this.text = text
+    }
+}
+
+export class App {
+    all_texts: Text[] = []
+
+    constructor() {
+        setInterval(()=>this.render(), 1)
     }
 
     public addText(text: string) {
-        this.scene.add(new TextSprite(text))
+        let newText = new Text(text,this.all_texts.length)
+
+        this.all_texts.push(newText)
     }
     
     private render() {
-        this.renderer.render(this.scene, this.camera);
-        requestAnimationFrame(() => this.render());
+        const t = Date.now() / 1000000
+        this.all_texts.forEach((text: Text) => {
+            let l = text.text.length / 8
+            text.elem.style.top = 500+text.rnd * Math.sin(text.id * t) * l * 500 + 'px'
+            text.elem.style.left = 800+text.rnd * Math.cos(text.id * t) * l * 500 + 'px';
+        })
     };
 
     public resize(width: number, height: number) {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
 }

@@ -15,37 +15,65 @@
 </head>
 
 <body>
-    <div id="log"></div>
-    <script async defer>
-        function speech2text() {
-            var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
-            var recognition = new SpeechRecognition();
-            recognition.continuous = true;
+<div id="log"></div>
+<script async defer>
+    function htmlLog(text){
+        document.getElementsByTagName('body')[0].append(text)
 
-            // This runs when the speech recognition service starts
-            recognition.onstart = function () {
-                console.log("We are listening. Try speaking into the microphone.");
-            };
+    }
 
-            recognition.onspeechend = function () {
-                // when user is done speaking
-                //recognition.stop();
+    function postData(text){
+        var http = new XMLHttpRequest();
+        var url = 'http://127.0.0.1:9123/words/add';
+        http.open('POST', url, true);
+
+        //Send the proper header information along with the request
+        http.setRequestHeader('Content-type', 'text/plain');
+
+        http.onreadystatechange = function() {//Call a function when the state changes.
+            if(http.readyState == 4 && http.status == 200) {
+                console.log("SUCESS")
             }
+        }
+        http.send(text);
+    }
 
-            // This runs when the speech recognition service returns result
-            recognition.onresult = function (event) {
-                var transcript = event.results[0][0].transcript;
-                var confidence = event.results[0][0].confidence;
-                console.log(transcript,confidence)
-            };
+    function speech2text() {
+        var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+        var recognition = new SpeechRecognition();
+        recognition.lang = 'fr-FR';
+        recognition.continuous = true;
 
-            // start recognition
-            recognition.start();
+        // This runs when the speech recognition service starts
+        recognition.onstart = function () {
+            htmlLog("We are listening. Try speaking into the microphone.")
+            console.log("We are listening. Try speaking into the microphone.");
+        };
+
+        recognition.onspeechend = function () {
+            // when user is done speaking
+            //recognition.stop();
         }
 
-        speech2text()
+        // This runs when the speech recognition service returns result
+        recognition.onresult = function (event) {
+            let res = event.results[event.results.length-1]
 
-    </script>
+            var transcript = res[0].transcript;
+            var confidence = res[0].confidence;
+
+            console.log(transcript,confidence)
+            htmlLog(transcript)
+            postData(transcript)
+        };
+
+        // start recognition
+        recognition.start();
+    }
+
+    speech2text()
+
+</script>
 </body>
 
 </html>

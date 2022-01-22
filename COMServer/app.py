@@ -6,6 +6,7 @@ from flask_httpauth import HTTPBasicAuth
 from config import init_config, get_config
 import socketCOM
 from flask_socketio import SocketIO
+from flask_socketio import send, emit
 from datetime import datetime
 import sys
 import time
@@ -32,12 +33,23 @@ def verify_password(username, password):
         return username
 
 
+
+### TCP CONFIG   ##############################
+socketio = SocketIO(app,cors_allowed_origins=['http://localhost:9999'])
+
+
+def init(app):
+    global sio
+    sio = SocketIO(app)
+    return sio
+
+
 ### STORAGE CONFIG  ##############################
 mutex = threading.Lock()
 
 word_file_path = get_config('word_file') if get_config(
     'word_file') != '' else f'words_{datetime.now().strftime("%m%d%Y_%H%M%S")}'
-word_file = open(word_file_path, 'r+', encoding="utf-8")
+word_file = open(word_file_path, 'a+', encoding="utf-8")
 
 all_words = word_file.readlines()
 
@@ -60,7 +72,7 @@ def get_all():
 
 @app.route('/words/add', methods=['POST'])
 def add_words():
-    data = request.data.decode("utf-8")
+    data = str(request.data.decode("utf-8"))
     print('Got Data : ')
     print(data)
 
@@ -68,33 +80,8 @@ def add_words():
     safe_write_file(data+'\n')
     all_words.append(data)
 
+    socketio.emit('new_text', data, broadcast=True)
     return Response(data)
-
-
-### TCP CONFIG   ##############################
-socketio = SocketIO(app)
-
-
-def init(app):
-    global sio
-    sio = SocketIO(app)
-    return sio
-
-
-@socketio.on('*')
-def catch_all(event, sid, data):
-    print(event, sid, data)
-    pass
-
-
-@socketio.event
-def connect(sid, environ, auth):
-    print('connect ', sid)
-
-
-@socketio.event
-def disconnect(sid):
-    print('disconnect ', sid)
 
 ### START   ##############################
 
