@@ -59,7 +59,7 @@ public class Server : MonoBehaviour
             // Create listener on localhost port 8052. 			
             tcpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
             tcpListener.Start();
-            Debug.Log("Server is listening");
+            Console.WriteLine("Server is listening");
             Byte[] bytes = new Byte[1024];
             while (true)
             {
@@ -76,7 +76,7 @@ public class Server : MonoBehaviour
                             Array.Copy(bytes, 0, incommingData, 0, length);
                             // Convert byte array to string message. 							
                             string clientMessage = Encoding.ASCII.GetString(incommingData);
-                            Debug.Log("client message received as: " + clientMessage);
+                            Console.WriteLine("client message received as: " + clientMessage);
                             AsyncActions.AddText(clientMessage);
                         }
                     }
@@ -85,7 +85,7 @@ public class Server : MonoBehaviour
         }
         catch (SocketException socketException)
         {
-            Debug.Log("SocketException " + socketException.ToString());
+            Console.WriteLine("SocketException " + socketException.ToString());
         }
     }
 
@@ -110,12 +110,12 @@ public class Server : MonoBehaviour
                 byte[] serverMessageAsByteArray = Encoding.ASCII.GetBytes(serverMessage);
                 // Write byte array to socketConnection stream.               
                 stream.Write(serverMessageAsByteArray, 0, serverMessageAsByteArray.Length);
-                Debug.Log("Server sent his message - should be received by client");
+                Console.WriteLine("Server sent his message - should be received by client");
             }
         }
         catch (SocketException socketException)
         {
-            Debug.Log("Socket exception: " + socketException);
+            Console.WriteLine("Socket exception: " + socketException);
         }
     }
 }

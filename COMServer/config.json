@@ -1,0 +1,17 @@
+{
+    "ENV": "DEV",
+    "DEV": {
+        "word_file" : "words",
+        "secret":"LOLOK",
+        "login" : "admin",
+        "mdp" : "admin",
+        "port" : 9123
+    },
+    "PROD": {
+        "word_file" : "words",
+        "secret":"${secret}",
+        "login" : "${LOGIN}",
+        "mdp" : "${MDP}",
+        "port" : 9123
+    }
+}

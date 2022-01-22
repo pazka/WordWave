@@ -17,8 +17,6 @@ public class Main : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Console.WriteLine("test");
-
         if (Input.GetKeyDown(KeyCode.C))
         {
             ChangeCamera();

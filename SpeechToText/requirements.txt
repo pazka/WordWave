@@ -6,7 +6,6 @@ idna==3.3
 Js2Py==0.71
 packaging==21.3
 pipwin==0.5.1
-PyAudio @ file:///C:/Users/Alexa/pipwin/PyAudio-0.2.11-cp310-cp310-win_amd64.whl
 pydub==0.25.1
 pyjsparser==2.7.1
 pyparsing==3.0.6
@@ -21,3 +20,4 @@ tzdata==2021.5
 tzlocal==4.1
 urllib3==1.26.8
 wincertstore==0.2
+PyAudio-0.2.11-cp39-cp39-win_amd64.whl
