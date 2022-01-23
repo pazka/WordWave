@@ -35,7 +35,7 @@ def verify_password(username, password):
 
 
 ### TCP CONFIG   ##############################
-socketio = SocketIO(app,cors_allowed_origins=['http://localhost:9999'])
+socketio = SocketIO(app,cors_allowed_origins=get_config('cors.origins'))
 
 
 def init(app):

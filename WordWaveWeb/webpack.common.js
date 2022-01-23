@@ -6,7 +6,7 @@ module.exports = {
     },
     output: {
         filename: 'bundle.js',
-        publicPath: '/dist',
+        publicPath: '/WordWave_debug/dist',
         path: path.resolve(__dirname, 'dist')
     },
     resolve: {

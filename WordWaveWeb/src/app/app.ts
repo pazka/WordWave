@@ -34,11 +34,11 @@ export class App {
     }
     
     private render() {
-        const t = Date.now() / 1000000
+        const t = Date.now() / 10000
         this.all_texts.forEach((text: Text) => {
             let l = text.text.length / 8
-            text.elem.style.top = 500+text.rnd * Math.sin(text.id * t) * l * 500 + 'px'
-            text.elem.style.left = 800+text.rnd * Math.cos(text.id * t) * l * 500 + 'px';
+            text.elem.style.top = 500+text.rnd * Math.sin(text.id + t) * l * 500 + 'px'
+            text.elem.style.left = 800+text.rnd * Math.cos(text.id + t) * l * 500 + 'px';
         })
     };
 
