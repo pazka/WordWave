@@ -35,7 +35,6 @@ def run():
 
 
 @auth.verify_password
-@wrap_error()
 def verify_password(username, password):
     if username == get_config('login') and password == get_config('mdp'):
         return username
@@ -63,6 +62,7 @@ def get_full_state():
 
 
 @app.route('/words', methods=['POST'])
+@auth.login_required
 @wrap_error()
 def add_text():
     data = str(request.data.decode("utf-8"))
@@ -75,6 +75,7 @@ def add_text():
 
 
 @app.route('/words', methods=['DELETE'])
+@auth.login_required
 @wrap_error()
 def reset():
     global word_processor
