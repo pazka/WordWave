@@ -38,5 +38,6 @@ const On = Object.freeze({
     rcv_leave: "rcv_leave",
 
     new_text: "new_text",
+    reset : "reset"
 })
 export {On}

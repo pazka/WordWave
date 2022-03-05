@@ -10,6 +10,7 @@ class WordProcessor:
         else:
             self._log_file = open(
                 f'words_{datetime.now().strftime("%m%d%Y_%H%M%S")}', 'a+', encoding="utf-8")
+        self._log_file.flush()
 
         self.mutex = threading.Lock()
         self.current_logs = ""
@@ -21,6 +22,11 @@ class WordProcessor:
             "max_occ": 0,
             "total_word_count": 0
         }
+
+        if path and path != "":
+            text = self._log_file.readlines()
+            self.register_text('\n'.join(text))
+
 
     def destroy(self):
         self._log_file.close()

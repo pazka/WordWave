@@ -2,7 +2,7 @@
   "ENV": "DEV",
   "DEV": {
     "wrap_errors" : false,
-    "word_file": "words",
+    "word_file": "words.words",
     "secret": "LOLOK",
     "login": "admin",
     "mdp": "admin",

@@ -1,3 +1,5 @@
+import {WordData} from "./DTO/WordData";
+
 export function getBaseUrl() {
     const url : any= window.location.href.match(/(https?:\/\/)([\w.]*)([:]\d*)?\/(\w*)/)
     const protocol = url[1] ?? ""
@@ -5,7 +7,7 @@ export function getBaseUrl() {
     const port = url[3] ?? ""
     const dynamicUrl = protocol + domain + port
 
-    return (process.env.NODE_ENV !== 'production') ? "http://localhost:9123/" : dynamicUrl
+    return (process.env.NODE_ENV !== 'production') ? "http://"+domain+":9123/" : dynamicUrl
 }
 
 export async function postData(urlPath = '', data = {}) {
@@ -26,7 +28,7 @@ export async function postData(urlPath = '', data = {}) {
     return response.json(); // parses JSON response into native JavaScript objects
 }
 
-export async function getJsonData(urlPath = '', data = {}) {
+export async function getJsonData(urlPath = '', data = {}) :Promise<WordData>{
     // Default options are marked with *
     const response = await fetch(getBaseUrl() +urlPath, {
         method: 'GET', // *GET, POST, PUT, DELETE, etc.
@@ -39,11 +41,11 @@ export async function getJsonData(urlPath = '', data = {}) {
         },
         redirect: 'follow', // manual, *follow, error
         referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-    });
+    })
     return response.json(); // parses JSON response into native JavaScript objects
 }
 
-export async function getTextData(urlPath = '', data = {}) {
+export async function getTextData(urlPath = '', data = {}) : Promise<string>{
     // Default options are marked with *
     const response = await fetch(getBaseUrl() +urlPath, {
         method: 'GET', // *GET, POST, PUT, DELETE, etc.
@@ -56,6 +58,7 @@ export async function getTextData(urlPath = '', data = {}) {
         },
         redirect: 'follow', // manual, *follow, error
         referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-    });
+    })
+    
     return response.text(); // parses JSON response into native JavaScript objects
 }
