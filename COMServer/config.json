@@ -1,7 +1,7 @@
 {
   "ENV": "DEV",
   "DEV": {
-    "wrap_errors" : true,
+    "wrap_errors" : false,
     "word_file": "words",
     "secret": "LOLOK",
     "login": "admin",
