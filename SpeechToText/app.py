@@ -58,5 +58,4 @@ while errors < 3:
         errors += 1
         print(e)
 
-
 client.close()
