@@ -2,19 +2,19 @@ import os
 import signal
 import sys
 
-import server
+import ServerCom
 from config import init_config, get_config
-from words_processing import WordProcessor
+from WordProcessor import WordProcessor
 
 init_config(os.path.dirname(os.path.abspath(__file__))+'/config.json')
 word_processor = WordProcessor(get_config('word_file'))
-server.init(word_processor)
-server.run()
+ServerCom.init(word_processor)
+ServerCom.run()
 
 
 def signal_handler(sig, frame):
     print('You pressed Ctrl+C!')
-    server.destroy()
+    ServerCom.destroy()
     sys.exit(0)
 
 

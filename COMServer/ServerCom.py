@@ -4,8 +4,8 @@ from flask_httpauth import HTTPBasicAuth
 
 from config import get_config
 from error_wrapper import wrap_error
-from socket_com import SocketCom
-from words_processing import WordProcessor
+from SocketCom import SocketCom
+from WordProcessor import WordProcessor
 
 users = {}
 
