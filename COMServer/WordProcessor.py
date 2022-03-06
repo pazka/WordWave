@@ -46,38 +46,50 @@ class WordProcessor:
     def get_all_uniq_words(self):
         return ' '.join(self.current_words.keys())
 
+    def should_ignoe_word(self,word):
+        return word == ""
+
     def register_text(self, text):
         """
             :return dict: grouped total count of words in this sentence
         """
-        normalized_text = re.sub(r'(\n\r)|[\n\r]|\s{2,}', ' ', text)
+        normalized_text = re.sub(r'(\n\r)|[\n\r]|\s{2,}|[^\w]', ' ', text)
+        normalized_text = normalized_text.lower()
         self.safe_log(normalized_text)
         self.current_logs += normalized_text + '\n'
 
         word_counted = {}
         for word in normalized_text.split(' '):
-            if word.strip(' ') != "":
-                self.register_word(word)
-                word_counted[word] = self.current_words[word]
+            if self.should_ignore_word(word):
+                continue
+
+            self.register_word(word)
+            word_counted[word] = self.current_words[word]
 
         return [word_counted, normalized_text]
 
     def register_word(self, word):
-
         if word not in self.current_words:
             self.current_words[word] = 0
 
         self.current_words[word] += 1
-        self.meta["total_word_count"] += 1
+        self.meta["total_word_count"] = len(self.current_words)
 
         if len(word) < self.meta['min_len']:
             self.meta['min_len'] = len(word)
 
         if len(word) > self.meta["max_len"]:
-            self.meta['min_len'] = len(word)
+            self.meta['max_len'] = len(word)
 
         if self.current_words[word] < self.meta["min_occ"]:
             self.meta['min_occ'] = self.current_words[word]
 
         if self.current_words[word] > self.meta["max_occ"]:
             self.meta['max_occ'] = self.current_words[word]
+
+"""
+    TODO : 
+        - Word exclusion
+        - Remove underspoken words (<2 occ for exemple)
+        - Linearize position function invert of power
+"""

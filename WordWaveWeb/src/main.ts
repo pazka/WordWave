@@ -22,7 +22,7 @@ class Main {
     private init_com() {
         events.sub(On.new_text, "app", (data: WordData) =>{
             this.app.saveMeta(data.meta)
-            this.app.loadWordCount(data.words)
+            this.app.saveWordCount(data.words)
         })
 
         events.sub(On.reset, "reset", (data: WordData) =>{
