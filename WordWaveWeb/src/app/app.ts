@@ -13,7 +13,7 @@ class Text {
 
     constructor(text: string, id: number) {
         this.elem = document.createElement('p')
-        this.elem.textContent = text + ":" + this.occ
+        this.elem.textContent = text
 
         let body = document.getElementsByTagName('body')[0]
         body.append(this.elem)
@@ -21,13 +21,13 @@ class Text {
         this.id = id
         this.text = text
     }
-    
-    destroy(){
+
+    destroy() {
         this.elem.remove()
     }
 
     refresh() {
-        this.elem.textContent = this.text + ":" + this.occ
+        this.elem.textContent = this.text
     }
 }
 
@@ -36,9 +36,18 @@ export class App {
 
     allTexts: Record<string, Text> = {} // dict(word : Text)
     meta: WordMeta = new WordMeta()
+    uv = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
+    startTime = Date.now()
+
 
     constructor() {
-        setInterval(() => this.render(), 1)
+        let update = () => {
+            window.requestAnimationFrame((t) => {
+                this.render(t)
+                update()
+            })
+        }
+        update()
     }
 
     public saveMeta(meta: WordMeta) {
@@ -46,10 +55,10 @@ export class App {
     }
 
     public loadWordCount(wordCount: Record<string, number>) {
-        Object.values(this.allTexts).forEach(text =>{
+        Object.values(this.allTexts).forEach(text => {
             text.destroy()
         })
-        
+
         this.allTexts = {}
         this.saveWordCount(wordCount)
     }
@@ -73,18 +82,21 @@ export class App {
         this.allTexts[text].refresh()
     }
 
-    private render() {
-        const t = Date.now() / 1000000
+    private render(timestamp: number = Date.now()) {
+        const t = Date.now() / 10000000
         //@ts-ignore
         Object.values(this.allTexts).forEach((text: Text) => {
-            let sin = Math.sin((text.id * t) % 400)
-            let cos = Math.cos((text.id * t) % 400)
+            let sin = Math.sin((text.id * t))
+            let cos = Math.cos((text.id * t))
             let l = text.text.length / 8
 
             let occ = 0.1 + 0.9 * (text.occ - this.meta.min_occ) / (this.meta.max_occ - this.meta.min_occ)
-
-            text.elem.style.top = 500 + (occ * sin) * 550 + 'px'
-            text.elem.style.left = 800 + (occ * cos) * 550 + 'px';
+            // y=Ae^(Bx) => y=Bx+log(A)
+            let logocc = Math.log(1+occ) * 1.5
+            
+            const width = this.uv / 2 - 100
+            text.elem.style.top = (width+(width/5)) + (logocc * sin) * (width) + 'px'
+            text.elem.style.left = "calc(45vw + " + (logocc * cos) * (width) + 'px)';
             text.elem.style.transform = `scale(${0.5 + occ * 3})`;
         })
     };
