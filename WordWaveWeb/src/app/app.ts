@@ -90,9 +90,9 @@ export class App {
             let cos = Math.cos((text.id * t))
             let l = text.text.length / 8
 
-            let occ = 0.1 + 0.9 * (text.occ - this.meta.min_occ) / (this.meta.max_occ - this.meta.min_occ)
+            let occ = 0.1 + 0.88 * (text.occ - this.meta.min_occ) / (this.meta.max_occ - this.meta.min_occ)
             // y=Ae^(Bx) => y=Bx+log(A)
-            let logocc = Math.log(1+occ) * 1.5
+            let logocc = (1-occ)*Math.log1p(occ)*6
             
             const width = this.uv / 2 - 100
             text.elem.style.top = (width+(width/5)) + (logocc * sin) * (width) + 'px'

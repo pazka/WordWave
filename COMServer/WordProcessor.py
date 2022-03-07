@@ -25,7 +25,7 @@ class WordProcessor:
         }
         self.excluded_words = []
 
-        with open(f"{curr_path}/excluded_words", "r") as f:
+        with open(f"{curr_path}/excluded_words_full", "r") as f:
             to_exclude = self.normalize_text(' '.join(f.readlines()))
             self.excluded_words = to_exclude.split(' ')
 
