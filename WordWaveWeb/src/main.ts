@@ -1,44 +1,38 @@
 import {App} from './app/app';
 import * as events from "./app/events";
 import {On, send} from "./app/events";
-import {getTextData} from "./app/rest";
+import {getJsonData, getTextData} from "./app/rest";
 import SocketIOService from "./app/socket";
-import Speech2Text from "./app/Speech2Text";
+import {WordData} from "./app/DTO/WordData";
 
 class Main {
 
     private app: App;
-    private socket
-    private s2t
-    
+    private socket = SocketIOService()
+
     constructor() {
         this.app = new App()
-        if(window.location.search.includes("s2t")){
-            console.log("Speech2Text activated")
-            this.s2t = new Speech2Text()
-            //@ts-ignore
-            document.getElementById('btn').addEventListener('click',()=>{
-                debug_text.forEach(t=>send(On.new_text, t))
-                
-            })
-        }else{
-            this.socket = SocketIOService()
-            this.initServerCommunication()
-        }
-        
-        events.sub(On.new_text, "app", (data: any) =>
-            data.split(' ').forEach(
-                (word: string) => this.app.addText(word)
-            )
-        )
+        this.init_com()
+        //@ts-ignore
+        document.getElementById('btn').addEventListener('click',()=>{
+            debug_text.forEach(t=>send(On.new_text, t))
+        })
     }
 
-    private initServerCommunication() {
-        getTextData('/words/current').then((data: string) =>
-            data.split(' ').forEach(
-                (word: string) => this.app.addText(word)
-            )
-        ).catch(err => {
+    private init_com() {
+        events.sub(On.new_text, "app", (data: WordData) =>{
+            this.app.saveMeta(data.meta)
+            this.app.saveWordCount(data.words)
+        })
+
+        events.sub(On.reset, "reset", (data: WordData) =>{
+            this.init_com()
+        })
+
+        getJsonData('/words/current').then((data: WordData) =>{
+            this.app.saveMeta(data.meta)    
+            this.app.loadWordCount(data.words)
+        }).catch(err => {
             console.error(err)
         })
     }
