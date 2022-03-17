@@ -1,2 +1,8 @@
 conda/
 .words
+__pycache__/
+conda
+words
+.vscode
+.idea
+*.words

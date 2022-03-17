@@ -1,0 +1,23 @@
+{
+  "name": "wordwave",
+  "version": "1.0.0",
+  "description": "Voice recognition and word visualisation across multiple clients for the artist Alessia Sanna",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pazka/WordWave.git"
+  },
+  "author": "Alexandre Weisser",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pazka/WordWave/issues"
+  },
+  "homepage": "https://github.com/pazka/WordWave#readme",
+  "devDependencies": {
+    "del": "^6.0.0",
+    "gulp": "^4.0.2"
+  }
+}

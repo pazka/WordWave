@@ -1,27 +1,43 @@
 {
-    "ENV": "DEV",
-    "DEV": {
-        "word_file": "",
-        "secret": "LOLOK",
-        "login": "admin",
-        "mdp": "admin",
-        "port": 9123,
-        "cors": {
-            "origins": [
-                "http://localhost:9999"
-            ]
-        }
-    },
-    "PROD": {
-        "word_file": "",
-        "secret": "${secret}",
-        "login": "${LOGIN}",
-        "mdp": "${MDP}",
-        "port": 9123,
-        "cors": {
-            "origins": [
-                "words.hosh.it"
-            ]
-        }
+  "ENV": "DEV",
+  "DEV": {
+    "debug" : true,
+    "wrap_errors" : false,
+    "word_file": "words.words",
+    "secret": "LOLOK",
+    "login": "admin",
+    "mdp": "admin",
+    "port": 9123,
+    "socket_cors": [
+      "http://localhost:9999"
+    ],
+    "flask_cors": {
+      "*": {
+        "origins": "*"
+      }
     }
+  },
+  "PROD": {
+    "debug" : false,
+    "wrap_errors" :  true,
+    "word_file": "",
+    "secret": "${secret}",
+    "login": "${LOGIN}",
+    "mdp": "${MDP}",
+    "port": 9123,
+    "socket_cors": [
+      "https://alessiasanna.fr",
+      "https://www.alessisanna.fr",
+      "https://wordwave.hosh.it"
+    ],
+    "flask_cors": {
+      "*": {
+        "origins": [
+          "https://alessiasanna.fr",
+          "https://www.alessisanna.fr",
+          "https://wordwave.hosh.it"
+        ]
+      }
+    }
+  }
 }

@@ -1,19 +1,25 @@
+import os
+
 from flask import Flask, request
 from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
 
-from config import get_config
-from error_wrapper import wrap_error
 from SocketCom import SocketCom
 from WordProcessor import WordProcessor
+from config import get_config
+from error_wrapper import wrap_error
 
 users = {}
 
-app = Flask(__name__)
+app = Flask(__name__,
+            static_url_path='/',
+            static_folder='public')
 auth = HTTPBasicAuth()
 cors: CORS
 word_processor: WordProcessor
 SocketCom: SocketCom
+
+curr_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def init(_word_processor: WordProcessor):
@@ -24,13 +30,17 @@ def init(_word_processor: WordProcessor):
     word_processor = _word_processor
     users[get_config('login')] = get_config('mdp')
     app.config['SECRET_KEY'] = get_config('secret')
+    app.config['DEBUG'] = get_config('debug')
+    app.config['ENV'] = 'development' if get_config('debug') else 'production'
     cors = CORS(app, resources=get_config('flask_cors'))
 
     SocketCom = SocketCom(app)
 
 
 def run():
-    SocketCom.io.run(app=app, port=get_config('port'))
+    SocketCom.io.run(app=app,
+                     port=get_config('port'),
+                     debug=get_config('debug'))
     print(f'REST/SOCKET listening to port : {get_config("port")}')
 
 
@@ -49,7 +59,7 @@ def get_meta_state():
 @app.route('/words/current/meta', methods=['GET'])
 @wrap_error()
 def get_word_state():
-    return word_processor.meta
+    return word_processor.meta.__dict__
 
 
 @app.route('/words/current', methods=['GET'])
@@ -57,7 +67,7 @@ def get_word_state():
 def get_full_state():
     return {
         "words": word_processor.current_words,
-        "meta": word_processor.meta
+        "meta": word_processor.meta.__dict__
     }
 
 
@@ -69,7 +79,7 @@ def add_text():
     [word_counted, normalized_text] = word_processor.register_text(data)
     SocketCom.broadcast_new_text({
         "words": word_counted,
-        "meta": word_processor.meta
+        "meta": word_processor.meta.__dict__
     })
     return normalized_text
 
@@ -84,6 +94,15 @@ def reset():
 
     SocketCom.broadcast_reset()
     return 'OK'
+
+
+@app.route('/', methods=['GET'])
+@wrap_error()
+def get_version():
+    global curr_path
+    global app
+    with open(curr_path + '/version', 'r') as f:
+        return f'WordWave COM Server V{f.readline()} on env {app.env}'
 
 
 def destroy():
