@@ -1,54 +1,74 @@
 const { series, parallel, src, dest } = require('gulp');
-var exec = require('gulp-exec');
-const through2 = require('through2');
+var exec = require('child_process').exec;
+var rename = require("gulp-rename");
+const tar = require('gulp-tar');
+const gzip = require('gulp-gzip');
 const fs = require("fs")
 
 var del = require('del');
 
-function cleanFront() {
-    return del('./WordWaveWeb/build')
+async function cleanFront() {
+    await del('WordWaveWeb/dist/*')
 }
 
-function cleanBack(cb) {
-    return cb()
+async function cleanBack() {
 }
 
-function cleanBuild(){
-    return del('./build')
+async function cleanBuild() {
+    await del('./build')
 }
 
-function buildBack(cb) {
-    src([
+async function buildBack() {
+    await src([
         './COMServer/*.py',
-        './COMServer/DTO/',
         './COMServer/requirements.txt',
-        './COMServer/dictionnaries/'
-    ])
+        './COMServer/DTO/*.py',
+        './COMServer/dictionnaries/*'
+    ], { base: './COMServer' })
         .pipe(dest('./build'))
 
-    src('./COMServer/config.prod.json')
-    .pipe(dest('./build/config.json'))
+    await src('./COMServer/config.prod.json')
+        .pipe(rename('config.json'))
+        .pipe(dest('./build'))
 
-    return cb()
 }
 
 function buildFront(cb) {
-    return cb()
+    exec('cd WordWaveWeb && npm i && npm run build', function (err, stdout, stderr) {
+        console.log(stdout);
+        console.log(stderr);
+        cb(err);
+    });
 }
 
-async function  setVersion() {
+async function copyFront() {
+    await src(['./WordWaveWeb/dist/*'])
+        .pipe(dest('./build/public'))
+}
+
+async function setVersion() {
     let version = await fs.readFileSync('./version')
     version = String(version).split('.')
     version[version.length - 1]++
     version = version.join('.')
-    await fs.writeFileSync('./version',version)
+    await fs.writeFileSync('./version', version)
 
-    return src('./version')
+    await src([
+        './version',
+        './Dockerfile'
+    ])
         .pipe(dest(['./build']))
 }
 
-const build = series(parallel(buildBack, buildFront), setVersion);
-const clean = parallel(cleanFront, cleanBack,cleanBuild );
+async function compress() {
+    await src('./build')
+        .pipe(tar('build.tar'))
+        .pipe(gzip())
+        .pipe(dest('.'))
+}
+
+const build = series(parallel(buildBack, buildFront), copyFront, setVersion);
+const clean = parallel(cleanFront, cleanBack, cleanBuild);
 
 
 exports.default = series(clean, build);

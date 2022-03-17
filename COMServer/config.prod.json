@@ -7,7 +7,7 @@
     "secret": "${secret}",
     "login": "${LOGIN}",
     "mdp": "${MDP}",
-    "port": 9123,
+    "port": "${PORT}",
     "socket_cors": [
       "https://alessiasanna.fr",
       "https://www.alessisanna.fr",
