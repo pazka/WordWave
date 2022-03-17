@@ -18,6 +18,8 @@
   "homepage": "https://github.com/pazka/WordWave#readme",
   "devDependencies": {
     "del": "^6.0.0",
-    "gulp": "^4.0.2"
+    "gulp": "^4.0.2",
+    "gulp-exec": "^5.0.0",
+    "through2": "^4.0.2"
   }
 }
