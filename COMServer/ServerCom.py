@@ -12,8 +12,9 @@ from error_wrapper import wrap_error
 users = {}
 
 app = Flask(__name__,
-            static_url_path='/',
+            static_url_path='/public',
             static_folder='public')
+
 auth = HTTPBasicAuth()
 cors: CORS
 word_processor: WordProcessor
@@ -107,6 +108,12 @@ def reset():
     SocketCom.broadcast_reset()
     return 'OK'
 
+@app.route('/reload', methods=['DELETE'])
+@auth.login_required
+@wrap_error()
+def reload():
+    SocketCom.broadcast_reload()
+    return 'OK'
 
 def get_app():
     return app

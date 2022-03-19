@@ -6,7 +6,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from ServerCom import get_app
 from error_wrapper import wrap_error
 
-SWAGGER_URL = '/admin'  # URL for exposing Swagger UI (without trailing '/')
+SWAGGER_URL = '/swagger'  # URL for exposing Swagger UI (without trailing '/')
 API_URL = '/spec'  # Our API url (can of course be a local resource)
 
 curr_path = os.path.dirname(os.path.abspath(__file__))

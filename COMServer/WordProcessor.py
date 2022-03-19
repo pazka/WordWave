@@ -117,12 +117,3 @@ class WordProcessor:
 
             if count > self.meta.max_occ:
                 self.meta.max_occ = self.current_words[word]
-
-
-"""
-    TODO : 
-        - Remove underspoken words (<2 occ for exemple)
-        - Linearize position function invert of power
-        - Page admin for text
-        - page admin for spoken test
-"""

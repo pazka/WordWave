@@ -27,3 +27,4 @@ urllib3==1.26.8
 Werkzeug==2.0.3
 flask-swagger==0.2.14
 flask-swagger-ui==3.36.0
+simple-websocket

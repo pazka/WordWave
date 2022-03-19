@@ -25,7 +25,8 @@ async function buildBack() {
         './COMServer/*.py',
         './COMServer/requirements.txt',
         './COMServer/DTO/*.py',
-        './COMServer/dictionnaries/*'
+        './COMServer/dictionnaries/*',
+        './COMServer/public/*'
     ], { base: './COMServer' })
         .pipe(dest('./build'))
 
@@ -69,7 +70,7 @@ async function buildDocker(cb){
         console.log(stderr);
         console.log(err);
 
-        fileName = "wordwave"+buildVersion
+        fileName = "wordwave."+buildVersion
 
         exec(`mkdir dist && cd dist && docker save wordwave > ${fileName}.tar && gzip -v ${fileName}.tar`, function (err, stdout, stderr) {
             console.log(stdout);

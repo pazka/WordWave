@@ -9,6 +9,7 @@ class Text {
     text: string
     id: number
     rnd: number = Math.random()
+    rnd1: number = Math.random()
     occ: number = 1
 
     constructor(text: string, id: number) {
@@ -17,7 +18,6 @@ class Text {
         this.elem.style.transition = 'all 1s'
         this.elem.style.top = '0px'
         this.elem.style.left = '0px'
-        this.elem.style.transform = `scale(1)`
 
         let body = document.getElementsByTagName('body')[0]
         body.append(this.elem)
@@ -42,7 +42,7 @@ export class App {
     meta: WordMeta = new WordMeta()
     uv = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
     startTime = Date.now()
-
+    params = new URLSearchParams(new URL(window.location.href).search)
 
     constructor() {
         let update = () => {
@@ -74,6 +74,9 @@ export class App {
     }
 
     public addWordCount(text: string, occ = 1) {
+        if (this.params.has("min") && !(occ >= Number(this.params.get("min"))))
+            return
+
         if (this.allTexts[text]) {
             this.allTexts[text].occ = occ
         } else {
@@ -89,21 +92,25 @@ export class App {
 
     private render(timestamp: number = Date.now()) {
         const t = Date.now() / 5000
+        const rdmAmpl = 50
         //@ts-ignore
         Object.values(this.allTexts).forEach((text: Text) => {
             let cos = Math.cos(text.id % (2 * Math.PI) + t)
             let sin = Math.sin(text.id % (2 * Math.PI) + t)
+            let sincos = cos - sin
             let l = text.text.length / 8
 
             let rawOccRate = (text.occ - this.meta.min_occ) / ((this.meta.max_occ - this.meta.min_occ) || 1)
             let occRate = 0.1 + 0.88 * rawOccRate
-                // y=Ae^(Bx) => y=Bx+log(A)
+            // y=Ae^(Bx) => y=Bx+log(A)
             let linOccRate = (1 - occRate) * Math.log1p(occRate) * 6
+            let rdm = text.rnd * rdmAmpl - rdmAmpl / 2
+            let rdm1 = text.rnd1 * rdmAmpl - rdmAmpl / 2
 
             const width = this.uv / 2 - 100
-            text.elem.style.top = (width + (width / 5)) + (linOccRate * sin) * (width) + 'px'
-            text.elem.style.left = "calc(45vw + " + (linOccRate * cos) * (width) + 'px)';
-            text.elem.style.transform = `scale(${0.5 + occRate * 3})`;
+            text.elem.style.top = (width + (width / 5)) + (linOccRate * sin) * (width) + rdm + 'px'
+            text.elem.style.left = "calc(45vw + " + ((linOccRate * cos) * (width) + rdm1) + 'px)';
+            text.elem.style.fontSize = `${5 + occRate * 50}px`;
         })
     };
 

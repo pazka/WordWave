@@ -18,5 +18,8 @@ class SocketCom:
     def broadcast_reset(self):
         self.io.emit('reset', None, broadcast=True)
 
+    def broadcast_reload(self):
+        self.io.emit('reload', None, broadcast=True)
+
     def destroy(self):
         self.io.emit('close', None, broadcast=True)

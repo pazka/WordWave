@@ -1,29 +1,55 @@
 # WordWave 
 
-# To build 
+# Objective
 
+This project is made for the artwork "Sonus Microform" directed by the artist Alessia Sanna. 
+Multiple clients will display a data visualisation of the word spoken during a conference. 
+
+# How 
+
+A unique client will register and manage a server. 
+The server will broadcast all word modification to multiple clients which will display those words.
+
+### Option 
+
+DataVisu - ?dark => Invert Black&White
+DataVisu - ?min=N => won't display words that occur less than N times
+
+# Build your own
+
+### DEV Requirements : 
+- python 3.9
+- docker
+- node
+- gulp
+- gzip
+
+### PROD Requirements : 
+- docker
+- gzip
+
+### Build an image
 ```cmd
 npm i
 gulp
 ```
+The file is in the dist folder
 
-# To deploy in a custom env
+### Deploy the image :
 
-- Follow The Dockerfile to know which instructions to run
-- Set the correct env vars
-- python app.py
+- Copy and de-zip the build : `gzip -d wordwave.tar.gz`
+- Load in docker : `docker load < wordwave.tar`
+- Run in docker : `docker run -p <your_port>:80 wordwave`
 
-# To deploy with docker
 
-# First deployement
+# WIP
 
-- Copy `build/`
-- Paste on the targeted environment
-- `cd build && docker build . -t wordwave`
-- `docker run WordWave`
-
-# Re-deploy 
-
-- Copy `build/`
-- Paste on the targeted environment
-- `cd build && docker build . -t wordwave --no-cache`
+### COULD TO : 
+- Remove underspoken words (<2 occ for exemple)
+    
+### TODO : 
+- Ability to switch Black/white in WordWaveWeb
+- Integrate Speech2Text in Server
+- Integrate Admin in Speech2Text
+- Prettify Speech2Text
+- Optimize WordWaveWeb for better perf (P5.js)
