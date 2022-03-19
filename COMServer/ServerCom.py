@@ -31,6 +31,7 @@ def init(_word_processor: WordProcessor):
     users[get_config('login')] = get_config('mdp')
     app.config['SECRET_KEY'] = get_config('secret')
     app.config['DEBUG'] = get_config('debug')
+    app.config['PORT'] = get_config('port')
     app.config['ENV'] = 'development' if get_config('debug') else 'production'
     cors = CORS(app, resources=get_config('flask_cors'))
 
@@ -38,9 +39,11 @@ def init(_word_processor: WordProcessor):
 
 
 def run():
-    SocketCom.io.run(app=app,
-                     port=get_config('port'),
-                     debug=get_config('debug'))
+    if get_config('debug'):
+        SocketCom.io.run(app=app, port=get_config('port'))
+    else:
+        SocketCom.io.run(app=app, host="0.0.0.0", port=get_config('port'))
+
     print(f'REST/SOCKET listening to port : {get_config("port")}')
 
 
@@ -105,13 +108,8 @@ def reset():
     return 'OK'
 
 
-@app.route('/', methods=['GET'])
-@wrap_error()
-def get_version():
-    global curr_path
-    global app
-    with open(curr_path + '/version', 'r') as f:
-        return f'WordWave COM Server V{f.readline()} on env {app.env}'
+def get_app():
+    return app
 
 
 def destroy():

@@ -11,14 +11,14 @@
     "socket_cors": [
       "https://alessiasanna.fr",
       "https://www.alessisanna.fr",
-      "https://wordwave.hosh.it"
+      "https://wordwave.hosh.it","http://localhost:9111"
     ],
     "flask_cors": {
       "*": {
         "origins": [
           "https://alessiasanna.fr",
           "https://www.alessisanna.fr",
-          "https://wordwave.hosh.it"
+          "https://wordwave.hosh.it","http://localhost:9111"
         ]
       }
     }

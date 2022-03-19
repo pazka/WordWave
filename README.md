@@ -7,7 +7,13 @@ npm i
 gulp
 ```
 
-# To deploy
+# To deploy in a custom env
+
+- Follow The Dockerfile to know which instructions to run
+- Set the correct env vars
+- python app.py
+
+# To deploy with docker
 
 # First deployement
 

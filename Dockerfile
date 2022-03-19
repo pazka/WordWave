@@ -12,7 +12,8 @@ COPY . .
 ENV secret WillBeChangedButNotCommited
 ENV LOGIN admin
 ENV MDP admin
-ENV PORT 9876
+ENV PORT 80
 
-CMD [ "ls" ]
+EXPOSE 80
+
 CMD [ "python", "app.py" ]

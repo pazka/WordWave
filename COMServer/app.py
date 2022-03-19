@@ -2,6 +2,7 @@ import os
 import signal
 import sys
 
+import AdminSetup
 import ServerCom
 from config import init_config, get_config
 from WordProcessor import WordProcessor
@@ -9,6 +10,7 @@ from WordProcessor import WordProcessor
 init_config(os.path.dirname(os.path.abspath(__file__))+'/config.json')
 word_processor = WordProcessor(get_config('word_file'))
 ServerCom.init(word_processor)
+AdminSetup.init()
 ServerCom.run()
 
 
