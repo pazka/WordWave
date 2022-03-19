@@ -7,7 +7,7 @@
     "secret": "LOLOK",
     "login": "admin",
     "mdp": "admin",
-    "port": 9123,
+    "port": "${PORT}",
     "socket_cors": [
       "http://localhost:9999"
     ],

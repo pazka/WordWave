@@ -24,11 +24,12 @@
 
     function postData(text){
         var http = new XMLHttpRequest();
-        var url = 'http://127.0.0.1:9123/words/add';
+        var url = 'http://127.0.0.1:9123/words';
         http.open('POST', url, true);
 
         //Send the proper header information along with the request
         http.setRequestHeader('Content-type', 'text/plain');
+        http.setRequestHeader('Authorization', 'Basic YWRtaW46YWRtaW4=');
 
         http.onreadystatechange = function() {//Call a function when the state changes.
             if(http.readyState == 4 && http.status == 200) {

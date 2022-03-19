@@ -71,7 +71,8 @@ def init_config(config_path):
                 config[key] = __recurs_parse_env_vars(val)
             elif isinstance(val, str):
                 config[key] = __try_parse_env_var_from_config(val)
-                return config
+
+        return config
 
     # parse env vars
     __full_config = __recurs_parse_env_vars(__full_config)

@@ -84,6 +84,15 @@ def add_text():
     return normalized_text
 
 
+@app.route('/words/exclude', methods=['POST'])
+@auth.login_required
+@wrap_error()
+def exclude_text():
+    data = str(request.data.decode("utf-8"))
+    word_processor.add_excluded_text(data)
+    return 'OK'
+
+
 @app.route('/words', methods=['DELETE'])
 @auth.login_required
 @wrap_error()

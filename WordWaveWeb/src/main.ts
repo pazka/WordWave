@@ -14,9 +14,6 @@ class Main {
         this.app = new App()
         this.init_com()
         //@ts-ignore
-        document.getElementById('btn').addEventListener('click',()=>{
-            debug_text.forEach(t=>send(On.new_text, t))
-        })
     }
 
     private init_com() {

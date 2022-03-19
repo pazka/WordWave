@@ -1,7 +1,7 @@
+import os
 import re
 import threading
 from datetime import datetime
-import os
 
 from DTO.MetaInfo import MetaInfo
 
@@ -51,6 +51,26 @@ class WordProcessor:
     def should_ignore_word(self, word):
         return word == "" or word in self.excluded_words
 
+    def add_excluded_text(self, text: str):
+        words = self.normalize_text(text).split(' ')
+
+        # update internal excluding dict
+        for word in words:
+            if word in self.excluded_words:
+                continue
+
+            self.excluded_words.append(word)
+
+        # exclude current word with new dict
+        new_current_words = {}
+        for word, count in self.current_words.items():
+            if word in self.excluded_words:
+                continue
+            new_current_words[word] = count
+
+        self.current_words = new_current_words
+        self.update_meta()
+
     def normalize_text(self, text):
         # replace multiple spaces, multiple non-word char, line return
         normalized_text = re.sub(r'\t+|(\n\r)+|[\n\r]+|\s{2,}|[^a-zA-Z\s]+', ' ', text)
@@ -58,7 +78,7 @@ class WordProcessor:
 
     def register_text(self, text):
         """
-            :return dict: grouped total count of words in this sentence
+            @return: dict grouped total count of words in this sentence
         """
         normalized_text = self.normalize_text(text)
         self.safe_log(normalized_text)
@@ -72,6 +92,7 @@ class WordProcessor:
             self.register_word(word)
             word_counted[word] = self.current_words[word]
 
+        self.update_meta()
         return [word_counted, normalized_text]
 
     def register_word(self, word):
@@ -81,22 +102,25 @@ class WordProcessor:
         self.current_words[word] += 1
         self.meta.total_word_count = len(self.current_words)
 
-        if len(word) < self.meta.min_len:
-            self.meta.min_len = len(word)
+    def update_meta(self):
+        self.meta = MetaInfo()
 
-        if len(word) > self.meta.max_len:
-            self.meta.max_len = len(word)
+        for word, count in self.current_words.items():
+            if len(word) < self.meta.min_len:
+                self.meta.min_len = len(word)
 
-        if self.current_words[word] < self.meta.min_occ:
-            self.meta.min_occ = self.current_words[word]
+            if len(word) > self.meta.max_len:
+                self.meta.max_len = len(word)
 
-        if self.current_words[word] > self.meta.max_occ:
-            self.meta.max_occ = self.current_words[word]
+            if count < self.meta.min_occ:
+                self.meta.min_occ = self.current_words[word]
+
+            if count > self.meta.max_occ:
+                self.meta.max_occ = self.current_words[word]
 
 
 """
     TODO : 
-        - Word exclusion
         - Remove underspoken words (<2 occ for exemple)
         - Linearize position function invert of power
         - Page admin for text

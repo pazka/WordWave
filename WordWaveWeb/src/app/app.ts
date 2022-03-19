@@ -14,6 +14,10 @@ class Text {
     constructor(text: string, id: number) {
         this.elem = document.createElement('p')
         this.elem.textContent = text
+        this.elem.style.transition = 'all 1s'
+        this.elem.style.top = '0px'
+        this.elem.style.left = '0px'
+        this.elem.style.transform = `scale(1)`
 
         let body = document.getElementsByTagName('body')[0]
         body.append(this.elem)
@@ -73,7 +77,8 @@ export class App {
         if (this.allTexts[text]) {
             this.allTexts[text].occ = occ
         } else {
-            let newText = new Text(text, Object.keys(this.allTexts).length)
+            //let newText = new Text(text, Object.keys(this.allTexts).length)
+            let newText = new Text(text, Math.random() * Number.MAX_SAFE_INTEGER)
             newText.occ = occ
 
             this.allTexts[text] = newText
@@ -83,21 +88,22 @@ export class App {
     }
 
     private render(timestamp: number = Date.now()) {
-        const t = Date.now() / 10000000
+        const t = Date.now() / 5000
         //@ts-ignore
         Object.values(this.allTexts).forEach((text: Text) => {
-            let sin = Math.sin((text.id * t))
-            let cos = Math.cos((text.id * t))
+            let cos = Math.cos(text.id % (2 * Math.PI) + t)
+            let sin = Math.sin(text.id % (2 * Math.PI) + t)
             let l = text.text.length / 8
 
-            let occ = 0.1 + 0.88 * (text.occ - this.meta.min_occ) / (this.meta.max_occ - this.meta.min_occ)
-            // y=Ae^(Bx) => y=Bx+log(A)
-            let logocc = (1-occ)*Math.log1p(occ)*6
-            
+            let rawOccRate = (text.occ - this.meta.min_occ) / ((this.meta.max_occ - this.meta.min_occ) || 1)
+            let occRate = 0.1 + 0.88 * rawOccRate
+                // y=Ae^(Bx) => y=Bx+log(A)
+            let linOccRate = (1 - occRate) * Math.log1p(occRate) * 6
+
             const width = this.uv / 2 - 100
-            text.elem.style.top = (width+(width/5)) + (logocc * sin) * (width) + 'px'
-            text.elem.style.left = "calc(45vw + " + (logocc * cos) * (width) + 'px)';
-            text.elem.style.transform = `scale(${0.5 + occ * 3})`;
+            text.elem.style.top = (width + (width / 5)) + (linOccRate * sin) * (width) + 'px'
+            text.elem.style.left = "calc(45vw + " + (linOccRate * cos) * (width) + 'px)';
+            text.elem.style.transform = `scale(${0.5 + occRate * 3})`;
         })
     };
 
