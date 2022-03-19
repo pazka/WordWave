@@ -6,6 +6,7 @@ const gzip = require('gulp-gzip');
 const fs = require("fs")
 
 var del = require('del');
+buildVersion = "0.0.1"
 
 async function cleanFront() {
     await del('WordWaveWeb/dist/*')
@@ -16,6 +17,7 @@ async function cleanBack() {
 
 async function cleanBuild() {
     await del('./build')
+    await del('./dist')
 }
 
 async function buildBack() {
@@ -53,11 +55,28 @@ async function setVersion() {
     version = version.join('.')
     await fs.writeFileSync('./version', version)
 
+    buildVersion = version
     await src([
         './version',
         './Dockerfile'
     ])
         .pipe(dest(['./build']))
+}
+
+async function buildDocker(cb){
+    exec(' cd build && docker build . --no-cache -t wordwave', function (err, stdout, stderr) {
+        console.log(stdout);
+        console.log(stderr);
+        console.log(err);
+
+        fileName = "wordwave"+buildVersion
+
+        exec(`mkdir dist && cd dist && docker save wordwave > ${fileName}.tar && gzip -v ${fileName}.tar`, function (err, stdout, stderr) {
+            console.log(stdout);
+            console.log(stderr);
+            cb(err)
+        });
+    });
 }
 
 async function compress() {
@@ -67,7 +86,7 @@ async function compress() {
         .pipe(dest('.'))
 }
 
-const build = series(parallel(buildBack, buildFront), copyFront, setVersion);
+const build = series(parallel(buildBack, buildFront), copyFront, setVersion,buildDocker);
 const clean = parallel(cleanFront, cleanBack, cleanBuild);
 
 
