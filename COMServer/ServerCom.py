@@ -54,6 +54,13 @@ def verify_password(username, password):
         return username
 
 
+@app.route('/login', methods=['POST'])
+@auth.login_required
+@wrap_error()
+def login():
+    return 'OK'
+
+
 @app.route('/words/current/recorded', methods=['GET'])
 @wrap_error()
 def get_recorded():

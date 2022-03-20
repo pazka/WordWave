@@ -18,6 +18,7 @@ class Text {
         this.elem.style.transition = 'all 1s'
         this.elem.style.top = '0px'
         this.elem.style.left = '0px'
+        this.elem.style.fontSize = `5px`;
 
         let body = document.getElementsByTagName('body')[0]
         body.append(this.elem)
@@ -114,7 +115,7 @@ export class App {
         })
     };
 
-    private rendera() {
+    private rendera(timestamp: number = Date.now()) {
         const t = Date.now() / 10000000
         Object.values(this.allTexts).forEach((text: Text) => {
             let sin = Math.sin(text.id * t)
