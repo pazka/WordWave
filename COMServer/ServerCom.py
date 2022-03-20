@@ -66,6 +66,12 @@ def get_word_state():
     return word_processor.meta.__dict__
 
 
+@app.route('/words/current/stop', methods=['GET'])
+@wrap_error()
+def get_excluded_words():
+    return ' '.join(word_processor.excluded_words)
+
+
 @app.route('/words/current', methods=['GET'])
 @wrap_error()
 def get_full_state():
@@ -80,12 +86,12 @@ def get_full_state():
 @wrap_error()
 def add_text():
     data = str(request.data.decode("utf-8"))
-    [word_counted, normalized_text] = word_processor.register_text(data)
+    [word_counted, registered_text] = word_processor.register_text(data)
     SocketCom.broadcast_new_text({
         "words": word_counted,
         "meta": word_processor.meta.__dict__
     })
-    return normalized_text
+    return registered_text
 
 
 @app.route('/words/exclude', methods=['POST'])
@@ -108,12 +114,14 @@ def reset():
     SocketCom.broadcast_reset()
     return 'OK'
 
+
 @app.route('/reload', methods=['DELETE'])
 @auth.login_required
 @wrap_error()
 def reload():
     SocketCom.broadcast_reload()
     return 'OK'
+
 
 def get_app():
     return app

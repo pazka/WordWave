@@ -22,7 +22,7 @@ class WordProcessor:
         self.meta = MetaInfo()
         self.excluded_words = []
 
-        with open(f"{curr_path}/dictionnaries/excluded_words_full", "r") as f:
+        with open(f"{curr_path}/dictionnaries/excluded_words_full", "r", encoding="utf-8") as f:
             to_exclude = self.normalize_text(' '.join(f.readlines()))
             self.excluded_words = to_exclude.split(' ')
 
@@ -73,13 +73,18 @@ class WordProcessor:
 
     def normalize_text(self, text):
         # replace multiple spaces, multiple non-word char, line return
-        normalized_text = re.sub(r'\t+|(\n\r)+|[\n\r]+|\s{2,}|[^a-zA-Z\s]+', ' ', text)
-        return normalized_text.lower()
+
+        normalized_text = text.lower()
+        normalized_text = re.sub(r'\t+|(\n\r)+|[\n\r]+|[^a-zA-Zàâäéèêëïîôöùûüÿç\s]+', ' ', normalized_text)
+        normalized_text = re.sub(r'\s{2,}', ' ', normalized_text)
+
+        return normalized_text
 
     def register_text(self, text):
         """
             @return: dict grouped total count of words in this sentence
         """
+        registered_text = ""
         normalized_text = self.normalize_text(text)
         self.safe_log(normalized_text)
         self.current_logs += normalized_text + '\n'
@@ -91,9 +96,10 @@ class WordProcessor:
 
             self.register_word(word)
             word_counted[word] = self.current_words[word]
+            registered_text += " " + word
 
         self.update_meta()
-        return [word_counted, normalized_text]
+        return [word_counted, registered_text]
 
     def register_word(self, word):
         if word not in self.current_words:

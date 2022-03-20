@@ -6,6 +6,14 @@
 body {
 }
 
+body.dark{
+  background-color: black;
+}
+
+body.dark p{
+  color : white;
+}
+
 p{
   position: absolute;
 }

@@ -36,8 +36,12 @@ export default function SocketIOService(){
     socket.on("new_text", (data) => {
         events.send(On.new_text,data)
     });
-    
+
     socket.on("reset", (data) => {
         events.send(On.reset,{})
+    });
+
+    socket.on("reload", (data) => {
+        events.send(On.reload,{})
     });
 }

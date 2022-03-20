@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\Alexa\AppData\Local\JetBrains\Rider2020.3\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\Alexa\AppData\Local\JetBrains\Rider2020.3\resharper-host\Local\Transient\Rider\v203\SolutionCaches\_.19.01" t="ExcludeRecursive" />
+    <e p="C:\Users\Alexa\Documents\Projects\Alessia\WordWave\SpeechToTextWeb" t="IncludeFlat">
+      <e p="node_modules\@babel\parser" t="IncludeRecursive" />
+      <e p="node_modules\@babel\types" t="IncludeRecursive" />
+      <e p="node_modules\@types" t="IncludeRecursive">
+        <e p="babel__generator" t="IncludeRecursive" />
+        <e p="babel__template" t="IncludeRecursive" />
+        <e p="babel__traverse" t="IncludeRecursive" />
+        <e p="body-parser" t="IncludeRecursive" />
+        <e p="connect" t="IncludeRecursive" />
+        <e p="eslint" t="IncludeRecursive" />
+        <e p="estree" t="IncludeRecursive" />
+        <e p="express" t="IncludeRecursive" />
+        <e p="express-serve-static-core" t="IncludeRecursive" />
+        <e p="istanbul-lib-coverage" t="IncludeRecursive" />
+        <e p="istanbul-lib-report" t="IncludeRecursive" />
+        <e p="json-schema" t="IncludeRecursive" />
+        <e p="mime" t="IncludeRecursive" />
+        <e p="node" t="IncludeRecursive" />
+        <e p="qs" t="IncludeRecursive" />
+        <e p="range-parser" t="IncludeRecursive" />
+        <e p="serve-static" t="IncludeRecursive" />
+        <e p="yargs-parser" t="IncludeRecursive" />
+      </e>
+      <e p="node_modules\babel" t="IncludeRecursive" />
+      <e p="node_modules\react" t="IncludeRecursive" />
+    </e>
+  </component>
+</project>

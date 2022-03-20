@@ -15,10 +15,11 @@
 </head>
 
 <body>
-<div id="log"></div>
+
+<div id="logs"></div>
 <script async defer>
     function htmlLog(text){
-        document.getElementsByTagName('body')[0].append(text)
+        document.getElementById('logs').append(text)
     }
 
     function postData(text){
@@ -72,7 +73,6 @@
     }
 
     speech2text()
-
 </script>
 </body>
 
