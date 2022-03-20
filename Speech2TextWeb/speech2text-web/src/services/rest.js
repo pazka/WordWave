@@ -66,6 +66,13 @@ export function allClientsReload() {
     })
 }
 
+export function getInfo() {
+    return new Promise((resolve, reject) => {
+        let http = prepareRequest(baseUrl + '/info', 'GET', null, resolve, reject)
+        http.send();
+    })
+}
+
 export function getMeta() {
     return new Promise((resolve, reject) => {
         let http = prepareRequest(baseUrl + '/words/current/meta', 'GET', null, resolve, reject)

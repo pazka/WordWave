@@ -3,8 +3,12 @@
     flex-wrap: wrap;
 }
 
+.App > *{
+    height : fit-content;
+}
+
 .form-group {
-    width : 30vw;
+    width : 25vw;
     margin : 1vw;
     padding : 1vw;
 }

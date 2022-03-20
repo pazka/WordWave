@@ -48,8 +48,7 @@ The file is in the dist folder
 - Remove underspoken words (<2 occ for exemple)
     
 ### TODO : 
-- Ability to switch Black/white in WordWaveWeb
-- Integrate Speech2Text in Server
-- Integrate Admin in Speech2Text
+- Speech2Text keeps screen on wake up
+- Integrate Speech2Text in admin page
 - Prettify Speech2Text
 - Optimize WordWaveWeb for better perf (P5.js)

@@ -14,7 +14,7 @@ export default (props)=> {
             <Paper elevation={5} className={'form-group'}>
                 <FormGroup>
                     <FormLabel>
-                        Control client visuals
+                        🎮 Client visuals
                     </FormLabel>
                     <Button
                         color={"secondary"}
@@ -34,7 +34,7 @@ export default (props)=> {
             <Paper elevation={5} className={'form-group'}>
                 <FormGroup>
                     <FormLabel>
-                        Speech Recognition Control
+                       🎤 Speech Recognition Control
                     </FormLabel>
                     <Button
                         color={"primary"}

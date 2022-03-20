@@ -25,7 +25,7 @@ export default (props) => {
             <Paper elevation={5} className={'form-group'}>
                 <FormGroup>
                     <FormLabel>
-                        Words Download
+                        🧾 Words Download
                     </FormLabel>
                     {fetchers.map((fetcher,i) => <Button
                         color={"primary"}
