@@ -1,50 +1,66 @@
 ﻿import {useEffect, useState} from "react";
-import {Button, FormGroup, FormLabel, Paper, TextareaAutosize} from "@mui/material";
-import {allClientsReload, postWords, resetAllClients} from "./services/rest";
+import {Button, FormGroup, FormLabel, Paper, styled, TextareaAutosize} from "@mui/material";
+import {allClientsReload, postExcludeWords, postWords, resetAllClients} from "./services/rest";
 import {
     addSpeechRecognizedListener,
     initSpeechRecognition,
     startSpeechRecognition,
     stopSpeechRecognition
 } from "./services/speech-2-text";
+import {Listening, NotListening, Sep} from "./Icons";
+import {tryKeepAwake} from "./services/wake-screen";
 
-export default (props)=> {
-    const [speech, setSpeech] = useState(false)
-    const [inputText,setInputText] = useState("")
+
+export default (props) => {
+    const [listening, setSpeech] = useState(false)
+    const [canKeepAwake,setCanKeepAwake] = useState(false)
+    const [inputText, setInputText] = useState("")
+    const [excludeText, setExcludeText] = useState("")
     const [recText, setRecordedText] = useState("")
     const [regtext, setRegisteredText] = useState("")
 
-    function handlePostText(text){
-        setInputText("")
+    function handlePostText(text) {
         postWords(text).then(
-            registeredText=> setRegisteredText(registeredText)
+            registeredText => {
+                setInputText("")
+                setRegisteredText(registeredText)
+            }
+        ).catch(err => {
+            console.error(err)
+        })
+    }
+
+    function handleExcludeText(text) {
+        postExcludeWords(text).then(
+            registeredExcludeText => setInputText("")
         )
     }
-    
-    function handleResetClients(){
-        if(window.confirm("Are you sure you want to reset the visual ? \n This will reset the manually excluded words, the server registered words and the visual of everybody connected on the website"))
-            resetAllClients().then(x=>x).catch(x=>x)
+
+    function handleResetClients() {
+        if (window.confirm("Are you sure you want to reset the visual ? \n This will reset the manually excluded words, the server registered words and the visual of everybody connected on the website"))
+            resetAllClients().then(x => x).catch(x => x)
     }
-    
+
     useEffect(() => {
         initSpeechRecognition()
-        
-        addSpeechRecognizedListener((transcript)=>{
+        tryKeepAwake().then(res=>setCanKeepAwake(true)).catch(err=>setCanKeepAwake(false))
+
+        addSpeechRecognizedListener((transcript) => {
             setRecordedText(transcript)
             handlePostText(transcript)
         })
     }, [])
-    
+
     function handleToggleSpeech() {
-        if(!speech){
+        if (!listening) {
             startSpeechRecognition()
-        }else{
+        } else {
             stopSpeechRecognition()
         }
-        
-        setSpeech(!speech)
+
+        setSpeech(!listening)
     }
-    
+
     return (<div className="App" style={{display: 'flex'}}>
             <Paper elevation={5} className={'form-group'}>
                 <FormGroup>
@@ -68,20 +84,26 @@ export default (props)=> {
                 </FormGroup>
             </Paper>
 
-            <Paper elevation={5} className={'form-group'}>
+            <Paper elevation={5} className={'form-group'} style={{
+                backgroundColor : (listening ? "red" : "inherit"),
+                animation: (listening ? `0.5s ease alternate-reverse pulse infinite` : "")
+            }}>
                 <FormGroup>
                     <FormLabel>
                         👂🎤 Speech Recognition Control
                     </FormLabel>
                     <Button
                         color={"primary"}
-                        variant={speech ? "outlined" : "contained"}
+                        variant={listening ? "outlined" : "contained"}
                         onClick={e => handleToggleSpeech()}
                     >
-                        {speech ? "Stop Recording" : "Start Recording"}
+                        {listening ? <Listening/> : <NotListening/>}
+                        {listening ? "Stop Recording" : "Start Recording"}
                     </Button>
+                    {canKeepAwake ? "Will not sleep" : "Can go to sleep"}
                 </FormGroup>
             </Paper>
+            <Sep/>
             <Paper elevation={5} className={'form-group'}>
                 <FormGroup>
                     <FormLabel>
@@ -90,7 +112,7 @@ export default (props)=> {
                     <TextareaAutosize
                         label={"Text to send"}
                         value={inputText}
-                        onChange={e=>setInputText(e.target.value)}
+                        onChange={e => setInputText(e.target.value)}
                     />
                     <Button
                         color={"primary"}
@@ -101,8 +123,29 @@ export default (props)=> {
                     </Button>
                 </FormGroup>
             </Paper>
+            
+            <Paper elevation={2} className={'form-group'}>
+                <FormGroup>
+                    <FormLabel>
+                        ✋🚫 Additional Exclude Word
+                    </FormLabel>
+                    <TextareaAutosize
+                        label={"Word to not count"}
+                        value={excludeText}
+                        onChange={e => setExcludeText(e.target.value)}
+                    />
+                    <Button
+                        color={"primary"}
+                        variant={"contained"}
+                        onClick={e => handleExcludeText(excludeText)}
+                    >
+                        {"Submit additional Exclude Words"}
+                    </Button>
+                </FormGroup>
+            </Paper>
+            
             <Paper elevation={5} style={{
-                width : "95vw"
+                width:"95vw"
             }} className={'form-group'}>
                 <FormGroup>
                     <FormLabel>

@@ -65,7 +65,8 @@ export function removeSpeechRecognizedListener(handlerId) {
 
 export function startSpeechRecognition() {
     if (!s2t)
-        throw "s2t not inited"
+        throw new Error("s2t not inited")
+    
     if(state==="started")
         return
     
@@ -76,7 +77,7 @@ export function startSpeechRecognition() {
 
 export function stopSpeechRecognition() {
     if (!s2t)
-        throw "s2t not inited"
+        throw new Error("s2t not inited")
 
     state = "stopped"
     s2t.stop();

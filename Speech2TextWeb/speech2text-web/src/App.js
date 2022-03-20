@@ -5,6 +5,7 @@ import {Button, FormGroup, FormLabel, Paper, TextField} from "@mui/material";
 import {getInfo, postLogin, setCredentials} from "./services/rest";
 import AdminPanel from "./AdminPanel";
 import NormalPanel from "./NormalPanel";
+import {Sep} from "./Icons";
 
 
 function App() {
@@ -71,6 +72,7 @@ function App() {
                 </FormGroup>}
             </Paper>
             <NormalPanel/>
+            <Sep/>
             {logged && <AdminPanel/>}
         </div>
     );
