@@ -17,7 +17,7 @@ class WordProcessor:
         self._log_file.flush()
 
         self.mutex = threading.Lock()
-        self.current_logs = ""
+        self.current_registered = ""
         self.current_words = {}
         self.meta = MetaInfo()
         self.excluded_words = []
@@ -39,14 +39,12 @@ class WordProcessor:
         self._log_file.flush()
         self.mutex.release()
 
-    def get_all_logs(self):
-        return self.current_logs
-
-    def get_all_words(self):
-        return self.current_logs.replace('\n', ' ')
-
-    def get_all_uniq_words(self):
-        return ' '.join(self.current_words.keys())
+    def safe_log_read(self):
+        self.mutex.acquire()
+        self._log_file.seek(0, 0)
+        logs = '\n'.join(self._log_file.readlines())
+        self.mutex.release()
+        return logs
 
     def should_ignore_word(self, word):
         return word == "" or word in self.excluded_words
@@ -84,10 +82,9 @@ class WordProcessor:
         """
             @return: dict grouped total count of words in this sentence
         """
+        self.safe_log(text)
         registered_text = ""
         normalized_text = self.normalize_text(text)
-        self.safe_log(normalized_text)
-        self.current_logs += normalized_text + '\n'
 
         word_counted = {}
         for word in normalized_text.split(' '):
@@ -99,6 +96,10 @@ class WordProcessor:
             registered_text += " " + word
 
         self.update_meta()
+
+        # log registered
+        self.current_registered += registered_text + '\n'
+
         return [word_counted, registered_text]
 
     def register_word(self, word):

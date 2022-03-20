@@ -54,7 +54,19 @@ def verify_password(username, password):
         return username
 
 
-@app.route('/words/current/words', methods=['GET'])
+@app.route('/words/current/recorded', methods=['GET'])
+@wrap_error()
+def get_recorded():
+    return word_processor.safe_log_read()
+
+
+@app.route('/words/current/registered', methods=['GET'])
+@wrap_error()
+def get_recording():
+    return word_processor.current_registered
+
+
+@app.route('/words/current/count', methods=['GET'])
 @wrap_error()
 def get_meta_state():
     return word_processor.current_words
