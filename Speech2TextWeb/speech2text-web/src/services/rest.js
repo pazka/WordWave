@@ -38,7 +38,7 @@ export function postLogin() {
     })
 }
 
-export function postWords(url, text) {
+export function postWords(text) {
     return new Promise((resolve, reject) => {
         let http = prepareRequest(baseUrl + '/words', 'POST', 'text/plain', resolve, reject)
         http.send(text);

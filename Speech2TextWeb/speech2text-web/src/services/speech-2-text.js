@@ -1,17 +1,12 @@
 ﻿
-let s2t
-
-function checkInit(checkNotInit ){
-    if(s2t && !shouldBeInited)
-        throw new Error("Already inited SpeechRecognition")
-    if(!s2t && shouldBeInited)
-        throw new Error("Didn't init SpeechRecognition")
-}
+let s2t = null
+const handlers = {}
 
 export function initSpeechRecognition(lang = 'fr-FR'){
-    checkInit(true)
+    if(s2t)
+        return
     
-    let SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+    const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
     s2t = new SpeechRecognition();
     s2t.lang = lang;
     s2t.continuous = true;
@@ -35,10 +30,12 @@ export function initSpeechRecognition(lang = 'fr-FR'){
         var confidence = res[0].confidence;
 
         console.log(transcript,confidence)
+        handlers.forEach(h=>{
+            h(transcript)
+        })
     };
 }
 
-const handlers = {}
 export function addSpeechRecognizedListener(handler) {
     const handlerId = Math.random() * Date.now()
     handlers[handlerId] = handler
@@ -50,12 +47,14 @@ export function removeSpeechRecognizedListener(handlerId) {
 }
 
 export function startSpeechRecognition(){
-    checkInit()
+    if(!s2t)
+        throw "s2t not inited"
     
     s2t.start();
 }
 export function stopSpeechRecognition(){
-    checkInit()
+    if(!s2t)
+        throw "s2t not inited"
     
     s2t.stop();
 }
