@@ -1,7 +1,7 @@
 import {App} from './app/app';
 import * as events from "./app/events";
-import {On, send} from "./app/events";
-import {getJsonData, getTextData} from "./app/rest";
+import {On} from "./app/events";
+import {getJsonData} from "./app/rest";
 import SocketIOService from "./app/socket";
 import {WordData} from "./app/DTO/WordData";
 

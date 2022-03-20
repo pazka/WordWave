@@ -16,6 +16,7 @@ export default class Speech2Text {
         };
 
         this.recognition.onspeechend = function () {
+            console.log("We are listening. Try speaking into the microphone.");
             // when user is done speaking
             //recognition.stop();
         }

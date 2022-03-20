@@ -1,6 +1,6 @@
 ﻿import {useEffect, useState} from "react";
 import {Button, FormGroup, FormLabel, Paper, TextareaAutosize} from "@mui/material";
-import {allClientsReload, getInfo, postWords, resetAllClients} from "./services/rest";
+import {allClientsReload, postWords, resetAllClients} from "./services/rest";
 import {
     addSpeechRecognizedListener,
     initSpeechRecognition,
@@ -36,11 +36,13 @@ export default (props)=> {
     }, [])
     
     function handleToggleSpeech() {
-        setSpeech(!speech)
-        if(speech){
+        if(!speech){
             startSpeechRecognition()
+        }else{
             stopSpeechRecognition()
         }
+        
+        setSpeech(!speech)
     }
     
     return (<div className="App" style={{display: 'flex'}}>

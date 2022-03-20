@@ -42,7 +42,13 @@ function App() {
             </Paper>
             <Paper elevation={5}
                    className={'form-group'}>
-                <FormGroup>
+                {logged && <FormGroup>
+                    <FormLabel>
+                        🔑 Admin credentials
+                    </FormLabel>
+                    <p> ✅ Logged in !</p>
+                </FormGroup>}
+                {!logged && <FormGroup>
                     <FormLabel>
                         🔑 Admin credentials
                     </FormLabel>
@@ -61,8 +67,8 @@ function App() {
                         onChange={e => handleSetCreds(null, e.target.value)}
                         value={creds.mdp}
                     />
-                    <Button onClick={handleLogin}>Login</Button>
-                </FormGroup>
+                    <Button variant="contained" onClick={handleLogin}>Login</Button>
+                </FormGroup>}
             </Paper>
             <NormalPanel/>
             {logged && <AdminPanel/>}
