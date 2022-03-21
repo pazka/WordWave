@@ -22,5 +22,5 @@ function objToQueryParams(obj) {
 export function isDev() {
     let queries = queryParamToObj(window.location.search);
 
-    return (process.env.NODE_ENV === "development" || process.env.REACT_APP_STAGE !== "prod") 
+    return window.location.host.includes("localhost") || window.location.host.includes("127.0.0")
 }

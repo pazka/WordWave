@@ -21,7 +21,7 @@ async function cleanBack() {
 
 async function cleanBuild() {
     await del('./build')
-    return del('./dist')
+    await del('./dist')
 }
 
 async function buildBack() {
@@ -30,7 +30,7 @@ async function buildBack() {
         './COMServer/requirements.txt',
         './COMServer/DTO/*.py',
         './COMServer/dictionnaries/*',
-        './COMServer/public/*'
+        './COMServer/static/*'
     ], { base: './COMServer' })
         .pipe(dest('./build'))
 
@@ -41,7 +41,7 @@ async function buildBack() {
 }
 
 function buildFront(cb) {
-    return new Promise((resolve,reject)=>{
+    return new Promise((resolve, reject) => {
         exec('cd WordWaveWeb && npm i && npm run build', function (err, stdout, stderr) {
             console.log(stdout);
             console.log(stderr);
@@ -51,7 +51,7 @@ function buildFront(cb) {
 }
 
 function buildAdmin(cb) {
-    return new Promise((resolve,reject)=>{
+    return new Promise((resolve, reject) => {
         exec('cd Speech2TextWeb/speech2text-web && npm i && npm run build', function (err, stdout, stderr) {
             console.log(stdout);
             console.log(stderr);
@@ -60,14 +60,28 @@ function buildAdmin(cb) {
     })
 }
 
-function copyFront() {
+async function copyFront() {
+
+    await src('./WordWaveWeb/dist/index.html')
+        .pipe(rename('data.html'))
+        .pipe(dest('./WordWaveWeb/dist/'))
+
+    await del('./Speech2TextWeb/speech2text-web/build/index.html')
+
     return src(['./WordWaveWeb/dist/**/*'])
-        .pipe(dest('./build/public'))
+        .pipe(dest('./build/static'))
 }
 
-function copyAdmin() {
+async function copyAdmin() {
+
+    await src('./Speech2TextWeb/speech2text-web/build/index.html')
+        .pipe(rename('admin.html'))
+        .pipe(dest('./Speech2TextWeb/speech2text-web/build/'))
+
+    await del('./Speech2TextWeb/speech2text-web/build/index.html')
+
     return src(['./Speech2TextWeb/speech2text-web/build/**/*'])
-        .pipe(dest('./build/public/admin'))
+        .pipe(dest('./build/static'))
 }
 
 async function setVersion() {
@@ -82,11 +96,11 @@ async function setVersion() {
         './version',
         './Dockerfile'
     ])
-    .pipe(dest(['./build']))
+        .pipe(dest(['./build']))
 }
 
-function buildDocker(cb){
-    return new Promise((resolve,reject)=>{
+function buildDocker(cb) {
+    return new Promise((resolve, reject) => {
         exec(' cd build && docker build . --no-cache -t wordwave', function (err, stdout, stderr) {
             console.log(stdout);
             console.log(stderr);
@@ -96,21 +110,21 @@ function buildDocker(cb){
     })
 }
 
-function compress(cb) {
-    return new Promise((resolve,reject)=>{
-        fileName = "wordwave."+buildVersion
-    
+function compress() {
+    return new Promise((resolve, reject) => {
+        fileName = "wordwave." + buildVersion
+
         exec(`mkdir dist && cd dist && docker save wordwave > ${fileName}.tar && gzip -v ${fileName}.tar`, function (err, stdout, stderr) {
             console.log(stdout);
             console.log(stderr);
-            cb(err)
+            resolve()
         });
-        resolve()
     })
 }
 
-const build = series(parallel(buildBack, buildFront,buildAdmin), parallel(copyFront,copyAdmin), setVersion,buildDocker,compress);
-const clean = parallel(cleanAdmin,cleanFront, cleanBack, cleanBuild);
+const buildApp = series(parallel(buildBack, buildFront, buildAdmin), copyFront, copyAdmin, setVersion);
+const build = series(buildApp, buildDocker, compress);
+const clean = parallel(cleanAdmin, cleanFront, cleanBack, cleanBuild);
 
-
+exports.buildApp = series(clean,buildApp)
 exports.default = series(clean, build);

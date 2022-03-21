@@ -12,8 +12,8 @@ from error_wrapper import wrap_error
 users = {}
 
 app = Flask(__name__,
-            static_url_path='/public',
-            static_folder='public')
+            static_url_path='/',
+            static_folder='static')
 
 auth = HTTPBasicAuth()
 cors: CORS
