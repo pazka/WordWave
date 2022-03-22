@@ -17,6 +17,7 @@ The server will broadcast all word modification to multiple clients which will d
 ## Visualisation : 
 
 ?dark => Invert Black&White
+
 ?min=N => won't display words which occur less than N times
 
 ![conférence](https://user-images.githubusercontent.com/8599093/159574811-6d00d700-837d-4f3f-ac5b-323d47cfb4d3.png)
