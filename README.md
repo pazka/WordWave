@@ -79,7 +79,7 @@ The compressed file is in the dist folder
 - Sonus Microform keeps screen on wake up = 1h 
 - Test voice register when screen is hidden = 1h
 
-- Prettify Speech2Text = 3h 
+- Prettify Admin Speech2Text>Speech Recogntion sectino = 3h 
    - Option To switch fr / en
    - Option to force retry of voice recognition
    - Display real status of Speech 
