@@ -13,10 +13,25 @@ A unique client will register and manage a server.
 The server will broadcast all word modification to multiple clients which will display those words.
 
 Visualisation : 
+![conférence](https://user-images.githubusercontent.com/8599093/159574811-6d00d700-837d-4f3f-ac5b-323d47cfb4d3.png)
 
 Admin interface : 
+![image](https://user-images.githubusercontent.com/8599093/159574958-b7830c69-7c62-4d40-b575-9130d2910958.png)
 
 Recording / Not recording : 
+![image](https://user-images.githubusercontent.com/8599093/159574985-8d5b1e44-8478-4ca1-b82b-3537f5e28e37.png)
+![image](https://user-images.githubusercontent.com/8599093/159575004-59f309fb-8dc5-4ca5-a2ce-a5fea8479c65.png)
+
+Open Data : 
+On the interface or at urls : 
+```
+words/current/recorded -> Logs of recorded words
+words/current/registered -> Logs or counted words
+words/current/count -> total count
+words/current/meta -> meta informations
+words/current/stop -> excluded word
+words/current -> meta + count
+```
 
 ### Option 
 
