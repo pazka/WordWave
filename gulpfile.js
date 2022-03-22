@@ -6,25 +6,25 @@ const gzip = require('gulp-gzip');
 const fs = require("fs")
 
 var del = require('del');
-buildVersion = "0.0.1"
+buildVersion = ""
 
-function cleanFront() {
-    return del('WordWaveWeb/dist/*')
+const cleanFront = async () => {
+    await del('WordWaveWeb/dist/*')
 }
 
-function cleanAdmin() {
-    return del('Speech2TextWeb/speech2text-web/build/*')
+const cleanAdmin = async () => {
+    await del('Speech2TextWeb/build/*')
 }
 
-async function cleanBack() {
+const cleanBack = async () => {
 }
 
-async function cleanBuild() {
+const cleanBuild = async () => {
     await del('./build')
     await del('./dist')
 }
 
-async function buildBack() {
+const buildBack = async () => {
     await src([
         './COMServer/*.py',
         './COMServer/requirements.txt',
@@ -34,57 +34,56 @@ async function buildBack() {
     ], { base: './COMServer' })
         .pipe(dest('./build'))
 
-    return src('./COMServer/config.prod.json')
+    await src('./COMServer/config.prod.json')
         .pipe(rename('config.json'))
         .pipe(dest('./build'))
-
 }
 
-function buildFront(cb) {
-    return new Promise((resolve, reject) => {
+const buildFront = () => {
+    return new Promise(cb => {
         exec('cd WordWaveWeb && npm i && npm run build', function (err, stdout, stderr) {
             console.log(stdout);
-            console.log(stderr);
-            resolve()
+            console.log(stderr)
+            console.log(err);
+            cb()
         });
     })
 }
 
-function buildAdmin(cb) {
-    return new Promise((resolve, reject) => {
-        exec('cd Speech2TextWeb/speech2text-web && npm i && npm run build', function (err, stdout, stderr) {
+const buildAdmin = () => {
+    return new Promise(cb => {
+        exec('cd Speech2TextWeb && npm i && npm run build', function (err, stdout, stderr) {
             console.log(stdout);
-            console.log(stderr);
-            resolve()
+            console.log(stderr)
+            console.log(err);
+            cb()
         });
     })
 }
 
-async function copyFront() {
-
-    await src('./WordWaveWeb/dist/index.html')
+const renameFrontIndex = () => {
+    return src('./WordWaveWeb/dist/index.html')
         .pipe(rename('data.html'))
-        .pipe(dest('./WordWaveWeb/dist/'))
+        .pipe(dest('./WordWaveWeb/dist'))
 
-    await del('./Speech2TextWeb/speech2text-web/build/index.html')
-
-    return src(['./WordWaveWeb/dist/**/*'])
+}
+const copyFront = () => {
+    return src('./WordWaveWeb/dist/**/*')
         .pipe(dest('./build/static'))
 }
 
-async function copyAdmin() {
-
-    await src('./Speech2TextWeb/speech2text-web/build/index.html')
+const renameAdminIndex = () => {
+    return src('./Speech2TextWeb/build/index.html')
         .pipe(rename('admin.html'))
-        .pipe(dest('./Speech2TextWeb/speech2text-web/build/'))
+        .pipe(dest('./Speech2TextWeb/build'))
+}
 
-    await del('./Speech2TextWeb/speech2text-web/build/index.html')
-
-    return src(['./Speech2TextWeb/speech2text-web/build/**/*'])
+const copyAdmin = () => {
+    return src('./Speech2TextWeb/build/**/*')
         .pipe(dest('./build/static'))
 }
 
-async function setVersion() {
+const setVersion = async()=> {
     let version = await fs.readFileSync('./version')
     version = String(version).split('.')
     version[version.length - 1]++
@@ -99,32 +98,41 @@ async function setVersion() {
         .pipe(dest(['./build']))
 }
 
-function buildDocker(cb) {
-    return new Promise((resolve, reject) => {
+const buildDocker = () => {
+    return new Promise(cb => {
         exec(' cd build && docker build . --no-cache -t wordwave', function (err, stdout, stderr) {
             console.log(stdout);
-            console.log(stderr);
-            cb(err)
+            console.log(stderr)
+            console.log(err);
+            cb()
         });
-        resolve()
     })
 }
 
-function compress() {
-    return new Promise((resolve, reject) => {
+const compress = () => {
+    return new Promise(cb => {
         fileName = "wordwave." + buildVersion
 
         exec(`mkdir dist && cd dist && docker save wordwave > ${fileName}.tar && gzip -v ${fileName}.tar`, function (err, stdout, stderr) {
             console.log(stdout);
-            console.log(stderr);
-            resolve()
+            console.log(stderr)
+            console.log(err);
+            cb()
         });
     })
 }
 
-const buildApp = series(parallel(buildBack, buildFront, buildAdmin), copyFront, copyAdmin, setVersion);
-const build = series(buildApp, buildDocker, compress);
+
+const buildFrontTask = series(buildFront,renameFrontIndex,copyFront)
+const buildAdminTask = series(buildAdmin,renameAdminIndex,copyAdmin)
+
+const buildApp = series(buildBack, parallel(buildFrontTask, buildAdminTask), setVersion);
+const buildImage = series(buildDocker, compress)
+
+const build = series(buildApp, buildImage);
 const clean = parallel(cleanAdmin, cleanFront, cleanBack, cleanBuild);
 
-exports.buildApp = series(clean,buildApp)
+exports.clean = clean
+exports.buildImage = buildImage
+exports.buildApp = series(clean, buildApp)
 exports.default = series(clean, build);

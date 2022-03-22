@@ -18,11 +18,18 @@
   "homepage": "https://github.com/pazka/WordWave#readme",
   "devDependencies": {
     "del": "^6.0.0",
-    "gulp": "^4.0.2",
+    "grunt-cli": "^1.4.3",
+    "grunt-exec": "^3.0.0",
+    "grunt-move": "^1.0.3",
+    "grunt-rm": "^0.0.4",
+    "grunt-shell": "^4.0.0",
     "gulp-exec": "^5.0.0",
     "gulp-gzip": "^1.4.2",
     "gulp-rename": "^2.0.0",
     "gulp-tar": "^3.1.0",
     "through2": "^4.0.2"
+  },
+  "dependencies": {
+    "fancy-log": "^2.0.0"
   }
 }

@@ -5,15 +5,24 @@
 This project is made for the artwork "Sonus Microform" directed by the artist Alessia Sanna. 
 Multiple clients will display a data visualisation of the word spoken during a conference. 
 
+Go watch in production : [https://wordwave.hosh.it/data.html](https://wordwave.hosh.it/data.html)
+
 # How 
 
 A unique client will register and manage a server. 
 The server will broadcast all word modification to multiple clients which will display those words.
 
+Visualisation : 
+
+Admin interface : 
+
+Recording / Not recording : 
+
 ### Option 
 
 DataVisu - ?dark => Invert Black&White
-DataVisu - ?min=N => won't display words that occur less than N times
+DataVisu - ?min=N => won't display words which occur less than N times
+
 
 # Build your own
 
@@ -33,13 +42,14 @@ DataVisu - ?min=N => won't display words that occur less than N times
 npm i
 gulp
 ```
-The file is in the dist folder
+The compressed file is in the dist folder
 
 ### Deploy the image :
 
 - Copy and de-zip the build : `gzip -d wordwave.tar.gz`
 - Load in docker : `docker load < wordwave.tar`
 - Run in docker : `docker run -p <your_port>:80 wordwave`
+- To override the default credentials : `docker run -e LOGIN=<your_login> -e MDP=<your_mdp> -e secret=<your_secret> -p <your_port>:80 wordwave`
 
 
 # WIP
@@ -48,7 +58,13 @@ The file is in the dist folder
 - Remove underspoken words (<2 occ for exemple)
     
 ### TODO : 
-- Speech2Text keeps screen on wake up
-- Integrate Speech2Text in admin page
-- Prettify Speech2Text
-- Optimize WordWaveWeb for better perf (P5.js)
+
+- Sonus Microform keeps screen on wake up = 1h 
+- Test voice register when screen is hidden = 1h
+
+- Prettify Speech2Text = 3h 
+   - Option To switch fr / en
+   - Option to force retry of voice recognition
+   - Display real status of Speech 
+
+- Optimize WordWaveWeb for better perf (P5.js / WebGL / Unity) = 3h
