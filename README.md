@@ -82,7 +82,5 @@ The compressed file is in the dist folder
 
 - Prettify Admin Speech2Text>Speech Recogntion sectino = 3h 
    - Option To switch fr / en
-   - Option to force retry of voice recognition
-   - Display real status of Speech 
 
 - Optimize WordWaveWeb for better perf (P5.js / WebGL / Unity) = 3h

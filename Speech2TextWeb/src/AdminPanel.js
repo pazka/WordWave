@@ -1,24 +1,21 @@
-﻿import {useEffect, useState} from "react";
-import {Button, FormGroup, FormLabel, Paper, styled, TextareaAutosize} from "@mui/material";
+﻿import {useState} from "react";
+import {Button, FormGroup, FormLabel, Paper, TextareaAutosize} from "@mui/material";
 import {allClientsReload, postExcludeWords, postWords, resetAllClients} from "./services/rest";
-import {
-    addSpeechRecognizedListener,
-    initSpeechRecognition,
-    startSpeechRecognition,
-    stopSpeechRecognition
-} from "./services/speech-2-text";
-import {Listening, NotListening, Sep} from "./Icons";
-import {tryKeepAwake} from "./services/wake-screen";
+import {Sep} from "./Icons";
+import {SpeechSection} from "./SpeechSection";
 
 
 export default (props) => {
-    const [listening, setSpeech] = useState(false)
-    const [canKeepAwake,setCanKeepAwake] = useState(false)
     const [inputText, setInputText] = useState("")
     const [excludeText, setExcludeText] = useState("")
     const [recText, setRecordedText] = useState("")
     const [regtext, setRegisteredText] = useState("")
 
+    function handleSpeechRecognized(transcript){
+        setRecordedText(transcript)
+        handlePostText(transcript)
+    }
+    
     function handlePostText(text) {
         postWords(text).then(
             registeredText => {
@@ -32,33 +29,13 @@ export default (props) => {
 
     function handleExcludeText(text) {
         postExcludeWords(text).then(
-            registeredExcludeText => setInputText("")
+            registeredExcludeText => {}
         )
     }
 
     function handleResetClients() {
         if (window.confirm("Are you sure you want to reset the visual ? \n This will reset the manually excluded words, the server registered words and the visual of everybody connected on the website"))
             resetAllClients().then(x => x).catch(x => x)
-    }
-
-    useEffect(() => {
-        initSpeechRecognition()
-        tryKeepAwake().then(res=>setCanKeepAwake(true)).catch(err=>setCanKeepAwake(false))
-
-        addSpeechRecognizedListener((transcript) => {
-            setRecordedText(transcript)
-            handlePostText(transcript)
-        })
-    }, [])
-
-    function handleToggleSpeech() {
-        if (!listening) {
-            startSpeechRecognition()
-        } else {
-            stopSpeechRecognition()
-        }
-
-        setSpeech(!listening)
     }
 
     return (<div className="App" style={{display: 'flex'}}>
@@ -83,26 +60,8 @@ export default (props) => {
                     </Button>
                 </FormGroup>
             </Paper>
-
-            <Paper elevation={5} className={'form-group'} style={{
-                backgroundColor : (listening ? "red" : "inherit"),
-                animation: (listening ? `0.5s ease alternate-reverse pulse infinite` : "")
-            }}>
-                <FormGroup>
-                    <FormLabel>
-                        👂🎤 Speech Recognition Control
-                    </FormLabel>
-                    <Button
-                        color={"primary"}
-                        variant={listening ? "outlined" : "contained"}
-                        onClick={e => handleToggleSpeech()}
-                    >
-                        {listening ? <Listening/> : <NotListening/>}
-                        {listening ? "Stop Recording" : "Start Recording"}
-                    </Button>
-                    {canKeepAwake ? "Will not sleep" : "Can go to sleep"}
-                </FormGroup>
-            </Paper>
+            
+            <SpeechSection onChange={handleSpeechRecognized}/>
             <Sep/>
             <Paper elevation={5} className={'form-group'}>
                 <FormGroup>

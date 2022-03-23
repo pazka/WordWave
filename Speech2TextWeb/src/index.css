@@ -15,9 +15,9 @@ code {
 
 @keyframes pulse {
     from {
-        opacity: 0.3
+        opacity: 0.5
     }
     to {
-        opacity: 0.8
+        opacity: 0.9
     }
 }
