@@ -1,6 +1,8 @@
 node_modules/
 build/
 dist/
+version
+deploy.cmd
 
 
 
