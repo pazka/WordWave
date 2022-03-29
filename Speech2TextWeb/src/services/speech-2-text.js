@@ -1,4 +1,4 @@
-﻿let s2t = null
+﻿let s2t : SpeechRecognition = null
 let wantedState = "stopped"
 let forceRetry = true
 
@@ -28,8 +28,21 @@ export function setListener(event : string,callback : Function){
 
 export function initSpeechRecognition(lang = 'fr-FR') {
     console.log("Initing speechRecognition")
-    if (s2t)
-        return
+    if (s2t){
+        console.warn("Restarting SpeechRecognition")
+        s2t.onstart = ()=>{}
+        s2t.onend = ()=>{}
+        
+        s2t.onspeechend = ()=>{}
+        s2t.onaudioend = ()=>{}
+        s2t.onsoundend = ()=>{}
+        
+        s2t.onspeechstart = ()=>{}
+        s2t.onaudioend = ()=>{}
+        s2t.onsoundstart = ()=>{}
+        s2t.stop()
+        s2t.abort()
+    }
 
     const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
     s2t = new SpeechRecognition();

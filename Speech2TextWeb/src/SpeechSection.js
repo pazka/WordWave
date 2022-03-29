@@ -1,4 +1,4 @@
-﻿import {Button, FormGroup, FormLabel, Paper, Switch, ToggleButton} from "@mui/material";
+﻿import {Button, FormGroup, FormLabel, MenuItem, Paper, Select, Switch, ToggleButton} from "@mui/material";
 import {Listening, NotListening} from "./Icons";
 import {useEffect, useState} from "react";
 import {
@@ -8,6 +8,8 @@ import {
     stopSpeechRecognition
 } from "./services/speech-2-text";
 import {tryKeepAwake} from "./services/wake-screen";
+import SelectInput from "@mui/material/Select/SelectInput";
+import {availableLangs, getCurrentLangOrDefault} from "./services/lang";
 
 interface Props {
     onChange: Function
@@ -15,16 +17,17 @@ interface Props {
 
 export const SpeechSection = (props) => {
     const [canKeepAwake, setCanKeepAwake] = useState(false)
+    const [lang, setLang] = useState(getCurrentLangOrDefault())
     const [speechState, setSpeechState] = useState({
         listening: false, hearing: false, active: false, error: null
     })
     const [alwaysOn, setAlwaysOn] = useState(true)
 
     useEffect(() => {
-        initSpeechRecognition()
+        initSpeechRecognition(lang)
         tryKeepAwake().then(res => setCanKeepAwake(true)).catch(err => setCanKeepAwake(false))
     }, [])
-
+    
     setListener('result', (transcript) => {
         if (props.onChange) {
             props.onChange(transcript)
@@ -32,8 +35,7 @@ export const SpeechSection = (props) => {
     })
     setListener('start', () => setSpeechState({
         ...speechState,
-        active: true,
-        error: null
+        active: true
     }))
     setListener('soundstart', () => setSpeechState({
         ...speechState,
@@ -63,11 +65,11 @@ export const SpeechSection = (props) => {
         hearing: false,
         listening: false
     }))
-    setListener('error', (err ) => {
+    setListener('error', (err) => {
         if (err.error !== "no-speech") {
             handleSetForceRetry(false)
         }
-        
+
         setSpeechState({
             ...speechState,
             error: err.error + " " + err.message
@@ -92,6 +94,21 @@ export const SpeechSection = (props) => {
         setForceRetry(value)
     }
 
+    const handleLangChange = (lang) => {
+        handleSetSpeech(false)
+        setSpeechState({
+            ...speechState,
+            active: false,
+            hearing: false,
+            listening: false
+        })
+        initSpeechRecognition(lang)
+        
+        handleSetSpeech(true)
+        setLang(lang)
+    }
+
+
     return (
         <Paper elevation={5} className={'form-group'} style={{
             backgroundColor: (speechState.active ? "red" : "inherit"),
@@ -109,9 +126,21 @@ export const SpeechSection = (props) => {
                     {speechState.listening ? <Listening/> : <NotListening/>}
                     {speechState.active ? "Stop Listening" : "Start Listening"}
                 </Button>
-                <span>Always Recording <Switch checked={alwaysOn} onChange={e => handleSetForceRetry(e.target.checked)}
-                                               inputProps={{'aria-label': 'controlled'}}
-                /> </span>
+                <span>
+                    Always Recording 
+                    <Switch checked={alwaysOn}
+                            onChange={e => handleSetForceRetry(e.target.checked)}
+                            inputProps={{'aria-label': 'controlled'}}/> 
+                </span>
+                <Select
+                    label={"Language"}
+                    value={lang}
+                    variant="standard"
+                    onChange={e => handleLangChange(e.target.value)}>
+                    {Object.keys(availableLangs).map(ln => (
+                        <MenuItem value={ln}>{availableLangs[ln]}</MenuItem>
+                    ))}
+                </Select>
                 {speechState.error && <b>{"ERROR : " + speechState.error.replace('-', ' ')}</b>}
                 {!canKeepAwake && <p> Error when trying to prevent the screen to go to sleep</p>}
 

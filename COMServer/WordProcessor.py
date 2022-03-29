@@ -91,7 +91,10 @@ class WordProcessor:
             if self.should_ignore_word(word):
                 continue
 
-            self.register_word(word)
+            if word not in self.current_words:
+                self.current_words[word] = 0
+
+            self.current_words[word] += 1
             word_counted[word] = self.current_words[word]
             registered_text += " " + word
 
@@ -99,18 +102,11 @@ class WordProcessor:
 
         # log registered
         self.current_registered += registered_text + '\n'
-
         return [word_counted, registered_text]
-
-    def register_word(self, word):
-        if word not in self.current_words:
-            self.current_words[word] = 0
-
-        self.current_words[word] += 1
-        self.meta.total_word_count = len(self.current_words)
 
     def update_meta(self):
         self.meta = MetaInfo()
+        self.meta.total_word_count = len(self.current_words)
 
         for word, count in self.current_words.items():
             if len(word) < self.meta.min_len:
