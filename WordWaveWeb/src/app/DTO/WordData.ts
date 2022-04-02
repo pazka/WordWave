@@ -5,7 +5,8 @@
     // @ts-ignore
     min_occ: Number.MAX_VALUE
     max_occ: 0
-    total_word_count : 0
+    total_word_counted : 0
+    total_word_registered : 0
 }
 
 export class WordData{

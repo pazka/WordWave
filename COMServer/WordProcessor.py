@@ -22,9 +22,13 @@ class WordProcessor:
         self.meta = MetaInfo()
         self.excluded_words = []
 
-        with open(f"{curr_path}/dictionnaries/excluded_words_full", "r", encoding="utf-8") as f:
+        with open(f"{curr_path}/dictionnaries/excluded_words_fr", "r", encoding="utf-8") as f:
             to_exclude = self.normalize_text(' '.join(f.readlines()))
             self.excluded_words = to_exclude.split(' ')
+
+        with open(f"{curr_path}/dictionnaries/excluded_words_en", "r", encoding="utf-8") as f:
+            to_exclude = self.normalize_text(' '.join(f.readlines()))
+            self.excluded_words += to_exclude.split(' ')
 
         if path and path != "":
             text = self._log_file.readlines()
@@ -102,21 +106,28 @@ class WordProcessor:
 
         # log registered
         self.current_registered += registered_text + '\n'
+        self.meta.total_word_registered += len(registered_text.split(' '))
         return [word_counted, registered_text]
 
     def update_meta(self):
-        self.meta = MetaInfo()
-        self.meta.total_word_count = len(self.current_words)
+        new_meta = MetaInfo()
+        new_meta.total_word_counted = len(self.current_words)
 
         for word, count in self.current_words.items():
-            if len(word) < self.meta.min_len:
-                self.meta.min_len = len(word)
+            if len(word) < new_meta.min_len:
+                new_meta.min_len = len(word)
 
-            if len(word) > self.meta.max_len:
-                self.meta.max_len = len(word)
+            if len(word) > new_meta.max_len:
+                new_meta.max_len = len(word)
 
-            if count < self.meta.min_occ:
-                self.meta.min_occ = self.current_words[word]
+            if count < new_meta.min_occ:
+                new_meta.min_occ = self.current_words[word]
 
-            if count > self.meta.max_occ:
-                self.meta.max_occ = self.current_words[word]
+            if count > new_meta.max_occ:
+                new_meta.max_occ = self.current_words[word]
+
+        self.meta.min_len = new_meta.min_len
+        self.meta.max_len = new_meta.max_len
+        self.meta.max_occ = new_meta.max_occ
+        self.meta.min_occ = new_meta.min_occ
+        self.meta.total_word_counted = new_meta.total_word_counted

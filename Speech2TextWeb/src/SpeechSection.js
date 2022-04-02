@@ -103,8 +103,6 @@ export const SpeechSection = (props) => {
             listening: false
         })
         initSpeechRecognition(lang)
-        
-        handleSetSpeech(true)
         setLang(lang)
     }
 

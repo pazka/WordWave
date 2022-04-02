@@ -3,43 +3,13 @@ import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {Sphere} from "./shapes";
 import {TextSprite} from "./shapes/TextSprite";
 import {WordMeta} from "./DTO/WordData";
-
-class Text {
-    elem: HTMLElement
-    text: string
-    id: number
-    rnd: number = Math.random()
-    rnd1: number = Math.random()
-    occ: number = 1
-
-    constructor(text: string, id: number) {
-        this.elem = document.createElement('p')
-        this.elem.textContent = text
-        this.elem.style.transition = 'all 1s'
-        this.elem.style.top = '0px'
-        this.elem.style.left = '0px'
-        this.elem.style.fontSize = `5px`;
-
-        let body = document.getElementsByTagName('body')[0]
-        body.append(this.elem)
-
-        this.id = id
-        this.text = text
-    }
-
-    destroy() {
-        this.elem.remove()
-    }
-
-    refresh() {
-        this.elem.textContent = this.text
-    }
-}
+import {TextElem} from "./TextElem";
+import {getXYRot} from "./positionRender";
 
 export class App {
     //TODO : Register allTexts by word not by array, to keep track of already added words
 
-    allTexts: Record<string, Text> = {} // dict(word : Text)
+    allTexts: Record<string, TextElem> = {} // dict(word : Text)
     meta: WordMeta = new WordMeta()
     uv = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
     startTime = Date.now()
@@ -56,7 +26,9 @@ export class App {
     }
 
     public saveMeta(meta: WordMeta) {
+        console.log("replacing",this.meta,"with",meta)
         this.meta = meta
+        console.log("is now",this.meta)
     }
 
     public loadWordCount(wordCount: Record<string, number>) {
@@ -73,16 +45,35 @@ export class App {
             this.addWordCount(word, wordCount[word])
         })
     }
-
+    
+    cullLimit = 8
+    cullCount = 0
+    cullCountDone = 0
+    
+    public shouldCull(occ : number){
+        //
+        if( occ <3 && (this.cullCount++%this.cullLimit)){
+            console.log(`the weak has been culled n°${this.cullCountDone}/${this.cullCount} : ${this.cullCount- this.cullCountDone} left`)
+            this.cullCountDone++
+            return true
+        }
+        
+        return false
+    }
+    
     public addWordCount(text: string, occ = 1) {
         if (this.params.has("min") && !(occ >= Number(this.params.get("min"))))
             return
+        
+        if( this.shouldCull(occ)){
+            return
+        }
 
         if (this.allTexts[text]) {
             this.allTexts[text].occ = occ
         } else {
             //let newText = new Text(text, Object.keys(this.allTexts).length)
-            let newText = new Text(text, Math.random() * Number.MAX_SAFE_INTEGER)
+            let newText = new TextElem(text, Math.random() * Number.MAX_SAFE_INTEGER)
             newText.occ = occ
 
             this.allTexts[text] = newText
@@ -92,10 +83,10 @@ export class App {
     }
 
     private render(timestamp: number = Date.now()) {
-        const t = Date.now() / 5000
+        const t = Date.now() / 10000
         const rdmAmpl = 50
         //@ts-ignore
-        Object.values(this.allTexts).forEach((text: Text) => {
+        Object.values(this.allTexts).forEach((text: TextElem) => {
             let cos = Math.cos(text.id % (2 * Math.PI) + t)
             let sin = Math.sin(text.id % (2 * Math.PI) + t)
             let sincos = cos - sin
@@ -117,17 +108,12 @@ export class App {
 
     private rendera(timestamp: number = Date.now()) {
         const t = Date.now() / 10000000
-        Object.values(this.allTexts).forEach((text: Text) => {
-            let sin = Math.sin(text.id * t)
-            let cos = Math.cos(text.id * t)
-            let l = text.text.length / 8
+        Object.values(this.allTexts).forEach((text: TextElem) => {
+           
+            const [x,y,rot] = getXYRot(text,t)
 
-
-            let angleRadian = (sin > 0) ? Math.acos(cos) : -Math.acos(cos);
-            let rot = angleRadian * 180 / Math.PI;
-
-            text.elem.style.top = 500 + text.rnd * sin * l * 500 + 'px'
-            text.elem.style.left = 800 + text.rnd * cos * l * 500 + 'px';
+            text.elem.style.top = y + 'px'
+            text.elem.style.left = x  + 'px';
             text.elem.style.transform = `rotate(${rot}deg)`;
         })
     };

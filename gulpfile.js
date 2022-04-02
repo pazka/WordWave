@@ -111,7 +111,7 @@ const buildDocker = () => {
 
 const compress = () => {
     return new Promise(cb => {
-        fileName = "wordwave." + buildVersion
+        fileName = "wordwave"
 
         exec(`mkdir dist && cd dist && docker save wordwave > ${fileName}.tar && gzip -v ${fileName}.tar`, function (err, stdout, stderr) {
             console.log(stdout);

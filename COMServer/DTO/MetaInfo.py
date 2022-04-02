@@ -7,4 +7,5 @@ class MetaInfo:
     max_len = 0
     min_occ = 99999
     max_occ = 0
-    total_word_count = 0
+    total_word_counted = 0
+    total_word_registered = 0
