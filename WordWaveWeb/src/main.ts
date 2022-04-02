@@ -15,8 +15,8 @@ class Main {
         this.app = new App()
         this.init_com()
         
-        if(this.params.has("dark"))
-            document.getElementsByTagName('body')[0].className = "dark"
+        if(this.params.has("light"))
+            document.getElementsByTagName('body')[0].className = "light"
     }
 
     private init_com() {

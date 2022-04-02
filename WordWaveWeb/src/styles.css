@@ -5,17 +5,20 @@
 
 body {
   background-color: black;
+  overflow: hidden;
 }
+
 p{
   color : white;
   position: absolute;
+  font-family: "Garamond";
 }
 
-body.dark{
-  background-color: black;
+body.light{
+  background-color: white;
 }
 
-body.dark p{
-  color : white;
+body.light p{
+  color : black;
 }
 

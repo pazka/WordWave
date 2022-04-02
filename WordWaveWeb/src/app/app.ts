@@ -11,7 +11,7 @@ export class App {
 
     allTexts: Record<string, TextElem> = {} // dict(word : Text)
     meta: WordMeta = new WordMeta()
-    uv = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
+    size = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
     startTime = Date.now()
     params = new URLSearchParams(new URL(window.location.href).search)
 
@@ -96,13 +96,18 @@ export class App {
             let occRate = 0.1 + 0.88 * rawOccRate
             // y=Ae^(Bx) => y=Bx+log(A)
             let linOccRate = (1 - occRate) * Math.log1p(occRate) * 6
+            let uv = linOccRate
             let rdm = text.rnd * rdmAmpl - rdmAmpl / 2
             let rdm1 = text.rnd1 * rdmAmpl - rdmAmpl / 2
 
-            const width = this.uv / 2 - 100
-            text.elem.style.top = (width + (width / 5)) + (linOccRate * sin) * (width) + rdm + 'px'
-            text.elem.style.left = "calc(45vw + " + ((linOccRate * cos) * (width) + rdm1) + 'px)';
-            text.elem.style.fontSize = `${5 + occRate * 50}px`;
+            const width = this.size / 2 - 100
+            const colorUv = 100+155*rawOccRate
+            
+            text.elem.style.top = (width + (width / 5)) + (uv * sin) * (width) + rdm + 'px'
+            text.elem.style.left = "calc(45vw + " + ((uv * cos) * (width) + rdm1) + 'px)';
+            text.elem.style.fontSize = `${3 + occRate * 50}px`;
+            text.elem.style.zIndex = ''+Math.round(10000*rawOccRate);
+            text.elem.style.color = `rgb(${colorUv},${colorUv},${colorUv})`
         })
     };
 
