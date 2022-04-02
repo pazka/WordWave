@@ -11,7 +11,7 @@ body {
 p{
   color : white;
   position: absolute;
-  font-family: "Garamond";
+  font-family: "Times New Roman";
 }
 
 body.light{

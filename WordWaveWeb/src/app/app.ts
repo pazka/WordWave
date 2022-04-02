@@ -102,12 +102,13 @@ export class App {
 
             const width = this.size / 2 - 100
             const colorUv = 100+155*rawOccRate
+            const colorUv1 = 30+60*rawOccRate
             
             text.elem.style.top = (width + (width / 5)) + (uv * sin) * (width) + rdm + 'px'
             text.elem.style.left = "calc(45vw + " + ((uv * cos) * (width) + rdm1) + 'px)';
             text.elem.style.fontSize = `${3 + occRate * 50}px`;
             text.elem.style.zIndex = ''+Math.round(10000*rawOccRate);
-            text.elem.style.color = `rgb(${colorUv},${colorUv},${colorUv})`
+            text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`
         })
     };
 
