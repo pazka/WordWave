@@ -26,9 +26,9 @@ export class App {
     }
 
     public saveMeta(meta: WordMeta) {
-        console.log("replacing",this.meta,"with",meta)
+        console.log("replacing", this.meta, "with", meta)
         this.meta = meta
-        console.log("is now",this.meta)
+        console.log("is now", this.meta)
     }
 
     public loadWordCount(wordCount: Record<string, number>) {
@@ -45,27 +45,27 @@ export class App {
             this.addWordCount(word, wordCount[word])
         })
     }
-    
+
     cullLimit = 8
     cullCount = 0
     cullCountDone = 0
-    
-    public shouldCull(occ : number){
+
+    public shouldCull(occ: number) {
         //
-        if( occ <3 && (this.cullCount++%this.cullLimit)){
-            console.log(`the weak has been culled n°${this.cullCountDone}/${this.cullCount} : ${this.cullCount- this.cullCountDone} left`)
+        if (occ < 3 && (this.cullCount++ % this.cullLimit)) {
+            console.log(`the weak has been culled n°${this.cullCountDone}/${this.cullCount} : ${this.cullCount - this.cullCountDone} left`)
             this.cullCountDone++
             return true
         }
-        
+
         return false
     }
-    
+
     public addWordCount(text: string, occ = 1) {
         if (this.params.has("min") && !(occ >= Number(this.params.get("min"))))
             return
-        
-        if( this.shouldCull(occ)){
+
+        if (this.shouldCull(occ)) {
             return
         }
 
@@ -93,33 +93,39 @@ export class App {
             let l = text.text.length / 8
 
             let rawOccRate = (text.occ - this.meta.min_occ) / ((this.meta.max_occ - this.meta.min_occ) || 1)
-            let occRate = 0.1 + 0.88 * rawOccRate
+            let occRate = 0.02 + 0.88 * rawOccRate
             // y=Ae^(Bx) => y=Bx+log(A)
             let linOccRate = (1 - occRate) * Math.log1p(occRate) * 6
-            let uv = linOccRate
+            let uvOcc = linOccRate
             let rdm = text.rnd * rdmAmpl - rdmAmpl / 2
             let rdm1 = text.rnd1 * rdmAmpl - rdmAmpl / 2
 
             const width = this.size / 2 - 100
-            const colorUv = 100+155*rawOccRate
-            const colorUv1 = 30+60*rawOccRate
+            const colorUv = 100 + 155 * rawOccRate
+            const colorUv1 = 30 + 60 * rawOccRate
+
+            const uvy = (uvOcc * sin)
+            const uvx = (uvOcc * cos)
+
+            text.elem.style.top = (width + (width / 5)) + uvy * (width) + rdm + 'px'
+            text.elem.style.left = "calc(45vw + " + (uvx * (width) + rdm1) + 'px)';
             
-            text.elem.style.top = (width + (width / 5)) + (uv * sin) * (width) + rdm + 'px'
-            text.elem.style.left = "calc(45vw + " + ((uv * cos) * (width) + rdm1) + 'px)';
-            text.elem.style.fontSize = `${3 + occRate * 50}px`;
-            text.elem.style.zIndex = ''+Math.round(10000*rawOccRate);
-            text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`
+            text.elem.style.fontSize = `${5 + occRate * 70}px`;
+            text.elem.style.zIndex = '' + Math.round(10000 * rawOccRate);
+
+            //text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`
+            text.elem.style.color = `rgb(${colorUv},${colorUv},${colorUv})`
         })
     };
 
     private rendera(timestamp: number = Date.now()) {
         const t = Date.now() / 10000000
         Object.values(this.allTexts).forEach((text: TextElem) => {
-           
-            const [x,y,rot] = getXYRot(text,t)
+
+            const [x, y, rot] = getXYRot(text, t)
 
             text.elem.style.top = y + 'px'
-            text.elem.style.left = x  + 'px';
+            text.elem.style.left = x + 'px';
             text.elem.style.transform = `rotate(${rot}deg)`;
         })
     };

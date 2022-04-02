@@ -71,16 +71,15 @@ The compressed file is in the dist folder
 
 
 # WIP
-
-### COULD TO : 
-- Remove underspoken words (<2 occ for exemple)
     
 ### TODO : 
 
+- Gradual culling of weak words (7/8 culled for 7000 registered and 2500 counted) 
+- Gradual center + darken + Smallest when comming to certain number of words
+- Clean up Render function to incroporate those function in a clean anner
+- Plural test (remove -s)
+
 - Sonus Microform keeps screen on wake up = 1h 
 - Test voice register when screen is hidden = 1h
-
-- Prettify Admin Speech2Text>Speech Recogntion sectino = 3h 
-   - Option To switch fr / en
 
 - Optimize WordWaveWeb for better perf (P5.js / WebGL / Unity) = 3h
