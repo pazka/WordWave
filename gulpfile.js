@@ -83,7 +83,7 @@ const copyAdmin = () => {
         .pipe(dest('./build/static'))
 }
 
-const setVersion = async()=> {
+const setVersion = async(cb)=> {
     let version = await fs.readFileSync('./version')
     version = String(version).split('.')
     version[version.length - 1]++
@@ -96,6 +96,15 @@ const setVersion = async()=> {
         './Dockerfile'
     ])
         .pipe(dest(['./build']))
+        
+    return new Promise(cb => {
+        exec('git tag '+version, function (err, stdout, stderr) {
+            console.log(stdout);
+            console.log(stderr)
+            console.log(err);
+            cb()
+        });
+    })
 }
 
 const buildDocker = () => {

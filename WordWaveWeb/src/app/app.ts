@@ -94,7 +94,7 @@ export class App {
             let l = text.text.length / 8
 
             let rawOccRate = (text.occ - this.meta.min_occ) / ((this.meta.max_occ - this.meta.min_occ) || 1)
-            let occRate = 0.02 + 0.88 * rawOccRate
+            let occRate = 0.02 + 0.95 * rawOccRate
             // y=Ae^(Bx) => y=Bx+log(A)
             let linOccRate = (1 - occRate) * Math.log1p(occRate) * 6
             let uvOcc = linOccRate
