@@ -4,6 +4,7 @@ import {On} from "./app/events";
 import {getJsonData} from "./app/rest";
 import SocketIOService from "./app/socket";
 import {WordData} from "./app/DTO/WordData";
+import {tryKeepAwake} from "./app/wake-screen";
 
 class Main {
 
@@ -14,6 +15,7 @@ class Main {
     constructor() {
         this.app = new App()
         this.init_com()
+        tryKeepAwake()
         
         if(this.params.has("light"))
             document.getElementsByTagName('body')[0].className = "light"

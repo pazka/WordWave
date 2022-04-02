@@ -5,6 +5,7 @@ import {TextSprite} from "./shapes/TextSprite";
 import {WordMeta} from "./DTO/WordData";
 import {TextElem} from "./TextElem";
 import {getXYRot} from "./positionRender";
+import {tryKeepAwake} from "./wake-screen";
 
 export class App {
     //TODO : Register allTexts by word not by array, to keep track of already added words
@@ -53,7 +54,7 @@ export class App {
     public shouldCull(occ: number) {
         //
         if (occ < 3 && (this.cullCount++ % this.cullLimit)) {
-            console.log(`the weak has been culled n°${this.cullCountDone}/${this.cullCount} : ${this.cullCount - this.cullCountDone} left`)
+            console.debug(`the weak has been culled n°${this.cullCountDone}/${this.cullCount} : ${this.cullCount - this.cullCountDone} left`)
             this.cullCountDone++
             return true
         }
@@ -101,7 +102,8 @@ export class App {
             let rdm1 = text.rnd1 * rdmAmpl - rdmAmpl / 2
 
             const width = this.size / 2 - 100
-            const colorUv = 100 + 155 * rawOccRate
+            const colorUv = 50 + 205 * rawOccRate
+            //const colorUv = 100 + 155 * rawOccRate
             const colorUv1 = 30 + 60 * rawOccRate
 
             const uvy = (uvOcc * sin)
