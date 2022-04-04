@@ -67,7 +67,7 @@ The compressed file is in the dist folder
 - Copy and de-zip the build : `gzip -d wordwave.tar.gz`
 - Load in docker : `docker load < wordwave.tar`
 - Run in docker : `docker run -p <your_port>:80 wordwave`
-- To override the default credentials : `docker run -e LOGIN=<your_login> -e MDP=<your_mdp> -e secret=<your_secret> -p <your_port>:80 wordwave`
+- To override the default credentials : `docker run -e LOGIN=<your_login> -e MDP=<your_mdp> -e secret=<your_secret> -p <your_port>:80 wordwave` or `docker start WordWave`
 
 
 # WIP
