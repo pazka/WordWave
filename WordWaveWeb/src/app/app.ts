@@ -12,9 +12,12 @@ export class App {
 
     allTexts: Record<string, TextElem> = {} // dict(word : Text)
     meta: WordMeta = new WordMeta()
-    size = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
+    //width = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
+    sizeX = window.innerWidth
+    sizeY = window.innerHeight
     startTime = Date.now()
     params = new URLSearchParams(new URL(window.location.href).search)
+    count = 1
 
     constructor() {
         let update = () => {
@@ -85,40 +88,83 @@ export class App {
 
     private render(timestamp: number = Date.now()) {
         const t = Date.now() / 10000
-        const rdmAmpl = 50
+        let rdmAmplitude = 50
         //@ts-ignore
         Object.values(this.allTexts).forEach((text: TextElem) => {
+
             let cos = Math.cos(text.id % (2 * Math.PI) + t)
             let sin = Math.sin(text.id % (2 * Math.PI) + t)
+
+            let boxWidth = text.elem.offsetWidth;
+            let boxHeight = text.elem.offsetHeight;
             let sincos = cos - sin
             let l = text.text.length / 8
 
             let rawOccRate = (text.occ - this.meta.min_occ) / ((this.meta.max_occ - this.meta.min_occ) || 1)
-            let occRate = 0.02 + 0.95 * rawOccRate
-            // y=Ae^(Bx) => y=Bx+log(A)
-            let linOccRate = (1 - occRate) * Math.log1p(occRate) * 6
-            let uvOcc = linOccRate
-            let rdm = text.rnd * rdmAmpl - rdmAmpl / 2
-            let rdm1 = text.rnd1 * rdmAmpl - rdmAmpl / 2
+            let occRate = 0.01 + 0.95 * rawOccRate
+            /**
+             * Transformation because too many words are spoken too rarely and very little words are spoken often
+             * The rule is the zipf law or something like that
+             *
+             * The goal is to linearize an exponetial function
+             * linearization function : y=Ae^(Bx) => y=Bx+log(A)
+             */
+            let uvOcc = (1 - occRate) * Math.log1p(occRate) * 6
+            if (occRate < 0.05) {
+                rdmAmplitude = 500
+            }
 
-            const width = this.size / 2 - 100
-            const colorUv = 50 + 205 * rawOccRate
-            //const colorUv = 100 + 155 * rawOccRate
-            const colorUv1 = 30 + 60 * rawOccRate
+            let rdmX = text.rndX * rdmAmplitude
+            let rdmY = text.rndY * rdmAmplitude
 
-            const uvy = (uvOcc * sin)
-            const uvx = (uvOcc * cos)
 
-            text.elem.style.top = (width + (width / 5)) + uvy * (width) + rdm + 'px'
-            text.elem.style.left = "calc(45vw + " + (uvx * (width) + rdm1) + 'px)';
-            
-            text.elem.style.fontSize = `${5 + occRate * 70}px`;
+            const sizeXWithoutExtraParams = this.sizeX - boxWidth - Math.abs(rdmX)
+            const sizeYWithoutExtraParams = this.sizeY - boxHeight - Math.abs(rdmY)
+
+            const centerX = sizeXWithoutExtraParams / 2
+            const centerY = sizeYWithoutExtraParams / 2
+            const colorUv = rawOccRate
+
+            let uvy = (uvOcc * sin)
+            let uvx = (uvOcc * cos)
+
+            let possiblePosX = centerX + rdmX + (uvx * (sizeXWithoutExtraParams / 2))
+            let possiblePosY = centerY + rdmY + (uvy * (sizeYWithoutExtraParams / 2))
+
+            if (possiblePosX > this.sizeX - boxWidth) {
+                possiblePosX = this.sizeX - boxWidth
+            } else if (possiblePosX < 0) {
+                possiblePosX = 0
+            }
+
+            if (possiblePosY > this.sizeY - boxHeight) {
+                possiblePosY = this.sizeY - boxHeight
+            } else if (possiblePosY < 0) {
+                possiblePosY = 0
+            }
+
+            text.elem.style.left = possiblePosX + 'px';
+            text.elem.style.top = possiblePosY + 'px'
+
+            text.elem.style.fontSize = `${(5 + occRate * 70) * 2.5}px`;
             text.elem.style.zIndex = '' + Math.round(10000 * rawOccRate);
 
             //text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`
-            text.elem.style.color = `rgb(${colorUv},${colorUv},${colorUv})`
+            text.elem.style.color = App.getGradientColor(colorUv, [100, 100, 100], [255, 255, 255])
+
+            text.updateFlag = true
         })
     };
+
+    private static getGradientColor(uv: number, c1: number[], c2: number[]): string {
+        const res = [
+            c1[0] + (c2[0] - c1[0]) * uv,
+            c1[1] + (c2[1] - c1[1]) * uv,
+            c1[2] + (c2[2] - c1[2]) * uv,
+        ]
+
+        return `rgb(${res.join(',')})`
+    }
 
     private rendera(timestamp: number = Date.now()) {
         const t = Date.now() / 10000000

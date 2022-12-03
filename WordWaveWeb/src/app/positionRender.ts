@@ -17,8 +17,8 @@ export function getXYRot(text : TextElem,t : number){
     let angleRadian = (sin > 0) ? Math.acos(cos) : -Math.acos(cos);
     
     let rot = angleRadian * 180 / Math.PI;
-    let y = 500 + text.rnd * sin * l * 500
-    let x = 800 + text.rnd * cos * l * 500
+    let y = 500 + text.rndX * sin * l * 500
+    let x = 800 + text.rndX * cos * l * 500
     
     return [x,y,rot]
 
