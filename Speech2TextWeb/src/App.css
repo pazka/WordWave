@@ -8,11 +8,11 @@
 }
 
 .form-group {
-    width : 25vw;
+    width : max(min(45vw,500px),25vw);
     margin : 1vw;
     padding : 1vw;
 }
 
 .form-group button {
     margin : 0.5em
-}
+} 

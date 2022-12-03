@@ -7,7 +7,6 @@ import AdminPanel from "./AdminPanel";
 import NormalPanel from "./NormalPanel";
 import {Sep} from "./Icons";
 
-
 function App() {
     const [creds, setCreds] = useState({login: "", mdp: ""})
     const [pswHidden, setPswHidden] = useState(true)

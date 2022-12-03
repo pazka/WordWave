@@ -1,13 +1,8 @@
 import {WordData} from "./DTO/WordData";
+import {getConfig} from "./env";
 
 export function getBaseUrl() {
-    const url : any= window.location.href.match(/(https?:\/\/)([\w.]*)([:]\d*)?\/(\w*)/)
-    const protocol = url[1] ?? ""
-    const domain = url[2] ?? ""
-    const port = url[3] ?? ""
-    const dynamicUrl = protocol + domain + port
-
-    return (process.env.NODE_ENV !== 'production') ? "http://"+domain+":9123/" : dynamicUrl
+    return getConfig().baseUrl
 }
 
 export async function postData(urlPath = '', data = {}) {

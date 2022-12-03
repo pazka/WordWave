@@ -1,9 +1,6 @@
-﻿import {isDev} from "./env";
+﻿import {getConfig} from "./env";
 
-let baseUrl = window.location.protocol + '//' + window.location.host
-if (isDev()){
-    baseUrl = "http://localhost:9123"
-}
+let baseUrl = getConfig().baseUrl
 
 const credentials = {login: "", mdp: ""}
 

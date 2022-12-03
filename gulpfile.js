@@ -109,7 +109,7 @@ const setVersion = async(cb)=> {
 
 const buildDocker = () => {
     return new Promise(cb => {
-        exec(' cd build && docker build . --no-cache -t wordwave', function (err, stdout, stderr) {
+        exec(' cd build && docker build . --no-cache -t pazka/wordwave', function (err, stdout, stderr) {
             console.log(stdout);
             console.log(stderr)
             console.log(err);
@@ -118,11 +118,29 @@ const buildDocker = () => {
     })
 }
 
+/**
+ * Old way of publishing the resulting backend docker image
+ * Now I will use "publish"
+ */
+
 const compress = () => {
     return new Promise(cb => {
         fileName = "wordwave"
 
-        exec(`mkdir dist && cd dist && docker save wordwave > ${fileName}.tar && gzip -v ${fileName}.tar`, function (err, stdout, stderr) {
+        exec(`mkdir dist && cd dist && docker save pazka/wordwave > ${fileName}.tar && gzip -v ${fileName}.tar`, function (err, stdout, stderr) {
+            console.log(stdout);
+            console.log(stderr)
+            console.log(err);
+            cb()
+        });
+    })
+}
+
+const publish = () => {
+    return new Promise(cb => {
+        fileName = "wordwave"
+
+        exec(`docker push pazka/wordwave:latest`, function (err, stdout, stderr) {
             console.log(stdout);
             console.log(stderr)
             console.log(err);
@@ -136,7 +154,7 @@ const buildFrontTask = series(buildFront,renameFrontIndex,copyFront)
 const buildAdminTask = series(buildAdmin,renameAdminIndex,copyAdmin)
 
 const buildApp = series(buildBack, parallel(buildFrontTask, buildAdminTask), setVersion);
-const buildImage = series(buildDocker, compress)
+const buildImage = series(buildDocker, publish)
 
 const build = series(buildApp, buildImage);
 const clean = parallel(cleanAdmin, cleanFront, cleanBack, cleanBuild);

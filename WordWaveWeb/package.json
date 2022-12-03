@@ -18,7 +18,7 @@
   "scripts": {
     "start": "webpack serve --config webpack.dev.js",
     "build": "webpack --config webpack.prod.js",
-    "build-alessia": "webpack --config webpack.prod.js"
+    "build-alessia": "webpack --config webpack.prod.alessia.js"
   },
   "dependencies": {
     "@seregpie/three.text-texture": "^3.2.1",

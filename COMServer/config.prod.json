@@ -10,14 +10,14 @@
     "port": "${PORT}",
     "socket_cors": [
       "https://alessiasanna.fr",
-      "https://www.alessisanna.fr",
+      "https://www.alessiasanna.fr",
       "https://wordwave.hosh.it"
     ],
     "flask_cors": {
       "*": {
         "origins": [
           "https://alessiasanna.fr",
-          "https://www.alessisanna.fr",
+          "https://www.alessiasanna.fr",
           "https://wordwave.hosh.it"
         ]
       }

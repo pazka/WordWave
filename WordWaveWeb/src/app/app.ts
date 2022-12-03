@@ -110,6 +110,7 @@ export class App {
              * linearization function : y=Ae^(Bx) => y=Bx+log(A)
              */
             let uvOcc = (1 - occRate) * Math.log1p(occRate) * 6
+            const colorUv = occRate
             if (occRate < 0.05) {
                 rdmAmplitude = 500
             }
@@ -123,7 +124,6 @@ export class App {
 
             const centerX = sizeXWithoutExtraParams / 2
             const centerY = sizeYWithoutExtraParams / 2
-            const colorUv = rawOccRate
 
             let uvy = (uvOcc * sin)
             let uvx = (uvOcc * cos)
@@ -146,7 +146,7 @@ export class App {
             text.elem.style.left = possiblePosX + 'px';
             text.elem.style.top = possiblePosY + 'px'
 
-            text.elem.style.fontSize = `${(5 + occRate * 70) * 2.5}px`;
+            text.elem.style.fontSize = `${6 * occRate + 1 }em`;
             text.elem.style.zIndex = '' + Math.round(10000 * rawOccRate);
 
             //text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`

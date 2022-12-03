@@ -1,4 +1,4 @@
-﻿import {Button, FormGroup, FormLabel, Paper} from "@mui/material";
+﻿import {Button, FormGroup, FormLabel, Link, Paper} from "@mui/material";
 import {getCount, getExcluded, getMeta, getRecorded, getRegistered} from "./services/rest";
 import {download} from "./services/file";
 
@@ -35,6 +35,7 @@ export default (props) => {
                     >
                         {fetcher[0]}
                     </Button>)}
+                    <Button><a href={"https://alessiasanna.fr/sonusmicroform/"} target={"_blank"}>Lien vers le visuel</a></Button>
                 </FormGroup>
             </Paper>
         </div>

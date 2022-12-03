@@ -1,0 +1,13 @@
+version: "3"
+services:
+  wordwave:
+    container_name: wordwave
+    image: pazka/wordwave
+    build: .
+    restart: until_stopped
+    ports:
+      - "9898:80"
+    env:
+      - LOGIN={LOGIN}
+      - MDP={MDP}
+      - secret={SECRET}
