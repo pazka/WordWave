@@ -97,8 +97,13 @@ export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENI
     }
 
     s2t.onerror = function (e) {
-        currentState = "error"
         console.log("[S2T] : Error", e);
+        if (wantedState === "started" && forceRetry) {
+            s2t.start();
+            return;
+        }
+        
+        currentState = "error"
         handlers.error(e)
     }
 
@@ -126,11 +131,11 @@ export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENI
         currentState = "audiostart"
         console.log("[S2T] : Audio Start");
         handlers.audiostart(e)
-        console.log("Timeout set ", LISTENING_TIMEOUT, " ms")
-        listening_timeout_fn = setTimeout(() => {
+        //console.log("Timeout set ", LISTENING_TIMEOUT, " ms")
+        /* listening_timeout_fn = setTimeout(() => {
             console.log("Timeout triggered ")
             s2t.stop()
-        }, LISTENING_TIMEOUT)
+        }, LISTENING_TIMEOUT) */
     }
     s2t.onsoundstart = function (e) {
         currentState = "soundstart"

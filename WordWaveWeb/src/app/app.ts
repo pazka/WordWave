@@ -7,6 +7,8 @@ import {TextElem} from "./TextElem";
 import {getXYRot} from "./positionRender";
 import {tryKeepAwake} from "./wake-screen";
 
+const START_CULLING_AFTER = 1000
+    
 export class App {
     //TODO : Register allTexts by word not by array, to keep track of already added words
 
@@ -56,7 +58,7 @@ export class App {
 
     public shouldCull(occ: number) {
         //
-        if (occ < 3 && (this.cullCount++ % this.cullLimit)) {
+        if (Object.keys(this.allTexts).length > START_CULLING_AFTER && occ < 3 && (this.cullCount++ % this.cullLimit)) {
             console.debug(`the weak has been culled n°${this.cullCountDone}/${this.cullCount} : ${this.cullCount - this.cullCountDone} left`)
             this.cullCountDone++
             return true

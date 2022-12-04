@@ -109,7 +109,7 @@ const setVersion = async(cb)=> {
 
 const buildDocker = () => {
     return new Promise(cb => {
-        exec(' cd build && docker build . --no-cache -t pazka/wordwave', function (err, stdout, stderr) {
+        exec(' cd build && docker build . --no-cache -t pazka/wordwave:latest', function (err, stdout, stderr) {
             console.log(stdout);
             console.log(stderr)
             console.log(err);

@@ -35,7 +35,7 @@ export default (props) => {
                     >
                         {fetcher[0]}
                     </Button>)}
-                    <Button><a href={"https://alessiasanna.fr/sonusmicroform/"} target={"_blank"}>Lien vers le visuel</a></Button>
+                    <Button><a href={"https://sensitivewords.alessiasanna.fr"} target={"_blank"}>Lien vers le visuel</a></Button>
                 </FormGroup>
             </Paper>
         </div>
