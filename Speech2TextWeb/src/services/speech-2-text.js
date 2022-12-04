@@ -1,8 +1,9 @@
 ﻿let s2t: SpeechRecognition = null
 let wantedState = "stopped"
 let forceRetry = true
-let LISTENING_TIMEOUT = 10 * 1000
+let continuousSpeech = false
 let listening_timeout_fn
+let listeningTimeout = 0
 let currentState = "none"
 
 const handlers = {
@@ -39,9 +40,7 @@ export function setListener(event: string, callback: Function) {
     handlers[event] = callback
 }
 
-export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENING_TIMEOUT) {
-    LISTENING_TIMEOUT = listeningTimeout
-
+export function initSpeechRecognition(lang = 'fr-FR') {
     console.log("Initing speechRecognition")
     if (s2t) {
         console.warn("Restarting SpeechRecognition")
@@ -75,7 +74,7 @@ export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENI
     const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
     s2t = new SpeechRecognition();
     s2t.lang = lang;
-    s2t.continuous = true;
+    s2t.continuous = continuousSpeech;
 
 // This runs when the speech recognition service starts
     s2t.onstart = function (e) {
@@ -86,7 +85,7 @@ export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENI
 
     s2t.onend = function (e) {
         console.log("[S2T] : End");
-        
+
         if (wantedState === "started" && forceRetry) {
             s2t.start();
             return;
@@ -102,7 +101,7 @@ export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENI
             s2t.start();
             return;
         }
-        
+
         currentState = "error"
         handlers.error(e)
     }
@@ -131,11 +130,14 @@ export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENI
         currentState = "audiostart"
         console.log("[S2T] : Audio Start");
         handlers.audiostart(e)
-        //console.log("Timeout set ", LISTENING_TIMEOUT, " ms")
-        /* listening_timeout_fn = setTimeout(() => {
-            console.log("Timeout triggered ")
-            s2t.stop()
-        }, LISTENING_TIMEOUT) */
+
+        if (listeningTimeout > 0) {
+            console.log("Timeout set ", listeningTimeout, " ms")
+            listening_timeout_fn = setTimeout(() => {
+                console.log("Timeout triggered after", listeningTimeout / 1000, " seconds")
+                s2t.stop()
+            }, listeningTimeout)
+        }
     }
     s2t.onsoundstart = function (e) {
         currentState = "soundstart"
@@ -143,7 +145,7 @@ export function initSpeechRecognition(lang = 'fr-FR', listeningTimeout = LISTENI
         handlers.soundstart(e)
     }
 
-// This runs when the speech recognition service returns result
+    // This runs when the speech recognition service returns result
     s2t.onresult = function (event) {
         currentState = "result"
         let res = event.results[event.results.length - 1]
@@ -177,4 +179,15 @@ export function stopSpeechRecognition() {
 export function setForceRetry(shouldForceRetry) {
     console.log("[S2T] ForcedRetry is", shouldForceRetry)
     forceRetry = shouldForceRetry
+}
+
+export function setSpeechTimeout(timeout) {
+    console.log("[S2T] Timeout is now : ", timeout)
+    listeningTimeout = timeout
+}
+
+export function setContinuousSpeech(continuous) {
+    console.log("[S2T] Continous is now : ", continuous)
+    s2t.continuous = continuousSpeech;
+    continuousSpeech = continuous
 }

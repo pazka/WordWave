@@ -8,7 +8,7 @@ export default class Speech2Text {
         let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
         this.recognition = new SpeechRecognition();
         this.recognition.lang = 'fr-FR';
-        this.recognition.continuous = true;
+        this.recognition.continuous = false;
 
         // This runs when the speech recognition service starts
         this.recognition.onstart = function () {

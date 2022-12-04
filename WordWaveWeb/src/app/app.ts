@@ -7,8 +7,8 @@ import {TextElem} from "./TextElem";
 import {getXYRot} from "./positionRender";
 import {tryKeepAwake} from "./wake-screen";
 
-const START_CULLING_AFTER = 1000
-    
+const START_CULLING_AFTER = 200
+
 export class App {
     //TODO : Register allTexts by word not by array, to keep track of already added words
 
@@ -89,8 +89,8 @@ export class App {
     }
 
     private render(timestamp: number = Date.now()) {
-        const t = Date.now() / 10000
-        let rdmAmplitude = 50
+        const t = Date.now() / 20000
+        let rdmAmplitude = 25
         //@ts-ignore
         Object.values(this.allTexts).forEach((text: TextElem) => {
 
@@ -103,7 +103,7 @@ export class App {
             let l = text.text.length / 8
 
             let rawOccRate = (text.occ - this.meta.min_occ) / ((this.meta.max_occ - this.meta.min_occ) || 1)
-            let occRate = 0.01 + 0.95 * rawOccRate
+            let occRate = 0.01 + 0.99 * rawOccRate
             /**
              * Transformation because too many words are spoken too rarely and very little words are spoken often
              * The rule is the zipf law or something like that
@@ -111,24 +111,27 @@ export class App {
              * The goal is to linearize an exponetial function
              * linearization function : y=Ae^(Bx) => y=Bx+log(A)
              */
-            let uvOcc = (1 - occRate) * Math.log1p(occRate) * 6
-            const colorUv = occRate
-            if (occRate < 0.05) {
-                rdmAmplitude = 500
+            let uvOcc = (1 - occRate) * Math.log1p(occRate) * 5
+
+            let colorUv1 = (1 - occRate) * Math.log1p(occRate)  * 4
+            let colorUv = Math.pow(Math.tan(colorUv1),2)/colorUv1
+
+            if (occRate < 0.02) {
+                rdmAmplitude = 800
             }
 
-            let rdmX = text.rndX * rdmAmplitude
-            let rdmY = text.rndY * rdmAmplitude
-
-
+            let rdmX = cos * text.rndX * rdmAmplitude
+            let rdmY = sin * text.rndY * rdmAmplitude
+            
             const sizeXWithoutExtraParams = this.sizeX - boxWidth - Math.abs(rdmX)
             const sizeYWithoutExtraParams = this.sizeY - boxHeight - Math.abs(rdmY)
 
             const centerX = sizeXWithoutExtraParams / 2
             const centerY = sizeYWithoutExtraParams / 2
 
-            let uvy = (uvOcc * sin)
+
             let uvx = (uvOcc * cos)
+            let uvy = (uvOcc * sin)
 
             let possiblePosX = centerX + rdmX + (uvx * (sizeXWithoutExtraParams / 2))
             let possiblePosY = centerY + rdmY + (uvy * (sizeYWithoutExtraParams / 2))
@@ -148,7 +151,7 @@ export class App {
             text.elem.style.left = possiblePosX + 'px';
             text.elem.style.top = possiblePosY + 'px'
 
-            text.elem.style.fontSize = `${6 * occRate + 1 }em`;
+            text.elem.style.fontSize = `${7 * occRate + 1}em`;
             text.elem.style.zIndex = '' + Math.round(10000 * rawOccRate);
 
             //text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`
