@@ -97,7 +97,7 @@ export class App {
 
     private render(timestamp: number = Date.now()) {
         const t = Date.now() / 20000
-        let rdmAmplitude = 25
+        let rdmAmplitude = this.uvSize * 0.5
         //@ts-ignore
         Object.values(this.allTexts).forEach((text: TextElem) => {
             if(text.isCulled) return
@@ -127,7 +127,7 @@ export class App {
             let colorUv = Math.atan(2*occRate)*Math.pow(0.9,occRate)
 
             if (occRate < 0.02) {
-                rdmAmplitude = 800
+                rdmAmplitude = this.uvSize * 0.8
             }
 
             let rdmX = cos * text.rndX * rdmAmplitude
