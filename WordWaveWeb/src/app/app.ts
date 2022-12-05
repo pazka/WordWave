@@ -7,14 +7,14 @@ import {TextElem} from "./TextElem";
 import {getXYRot} from "./positionRender";
 import {tryKeepAwake} from "./wake-screen";
 
-const START_CULLING_AFTER = 300
+const START_CULLING_AFTER = 200
 
 export class App {
     //TODO : Register allTexts by word not by array, to keep track of already added words
 
     allTexts: Record<string, TextElem> = {} // dict(word : Text)
     meta: WordMeta = new WordMeta()
-    //width = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
+    uvSize = window.innerHeight / window.innerWidth > 1 ? window.innerWidth : window.innerHeight
     sizeX = window.innerWidth
     sizeY = window.innerHeight
     startTime = Date.now()
@@ -53,8 +53,8 @@ export class App {
         })
     }
 
-    cullBatchSize = 30
-    doNotCullAt = 4
+    cullBatchSize = 800
+    doNotCullAt = 5
     cullCount = 0
     cullCountDone = 0
 
@@ -123,7 +123,8 @@ export class App {
             let uvOcc = (1 - occRate) * Math.log1p(occRate) * 5
 
             let colorUv1 = (1 - occRate) * Math.log1p(occRate) * 4
-            let colorUv = Math.pow(Math.tan(colorUv1), 2) / colorUv1
+            //let colorUv = Math.pow(Math.tan(occRate), 2) / (occRate+1.4)
+            let colorUv = Math.atan(2*occRate)*Math.pow(0.9,occRate)
 
             if (occRate < 0.02) {
                 rdmAmplitude = 800
@@ -160,7 +161,8 @@ export class App {
             text.elem.style.left = possiblePosX + 'px';
             text.elem.style.top = possiblePosY + 'px'
 
-            text.elem.style.fontSize = `${7 * occRate + 0.7 + 0.4*text.rndX }em`;
+            const textSize = this.uvSize/10
+            text.elem.style.fontSize = `${textSize * occRate + textSize/8 + textSize/12*text.rndX }px`;
             text.elem.style.zIndex = '' + Math.round(10000 * rawOccRate);
 
             //text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`

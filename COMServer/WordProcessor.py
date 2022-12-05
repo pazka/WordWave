@@ -39,7 +39,7 @@ class WordProcessor:
 
     def safe_log(self, text):
         self.mutex.acquire()
-        self._log_file.write(text)
+        self._log_file.write(text+'\n')
         self._log_file.flush()
         self.mutex.release()
 
@@ -82,20 +82,53 @@ class WordProcessor:
 
         return normalized_text
 
+    def get_possible_simplifications(self, word) -> [str]:
+        """
+            A word wan be sent but be the plural version of another
+            we will try to debunk them by adding context before the addition
+        """
+
+        simplifications = [word]
+        if word[-1] == 'e' or word[-1] == 's':
+            simplifications += [word[0:-1]]
+        if word[-2:-1] == "es":
+            simplifications += [word[0:-2]]
+
+        simplifications += [word+"es"]
+        simplifications += [word+"s"]
+
+        return simplifications
+
+    def get_already_registered_simplification(self, simplifications: [str], word_collection: dict) -> bool:
+        """
+        return if a list of words are in a collection
+        @param simplifications: word and it's possible simplifications
+        @param word_collection : dict with word as keys and count as occurences
+        @return: the word present if it's present, null otherwise
+        """
+        for word in simplifications:
+            if word in word_collection:
+                return word
+
     def register_text(self, text):
         """
             @return: dict grouped total count of words in this sentence
         """
+
         self.safe_log(text)
         registered_text = ""
         normalized_text = self.normalize_text(text)
 
         word_counted = {}
-        for word in normalized_text.split(' '):
-            if self.should_ignore_word(word):
+        for raw_word in normalized_text.split(' '):
+            if self.should_ignore_word(raw_word):
                 continue
 
-            if word not in self.current_words:
+            simplifications = self.get_possible_simplifications(raw_word)
+            word = self.get_already_registered_simplification(simplifications, self.current_words)
+
+            if word is None:
+                word = raw_word
                 self.current_words[word] = 0
 
             self.current_words[word] += 1
