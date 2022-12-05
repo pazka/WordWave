@@ -7,7 +7,7 @@ import {TextElem} from "./TextElem";
 import {getXYRot} from "./positionRender";
 import {tryKeepAwake} from "./wake-screen";
 
-const START_CULLING_AFTER = 200
+const START_CULLING_AFTER = 300
 
 export class App {
     //TODO : Register allTexts by word not by array, to keep track of already added words
@@ -20,6 +20,7 @@ export class App {
     startTime = Date.now()
     params = new URLSearchParams(new URL(window.location.href).search)
     count = 1
+    
 
     constructor() {
         let update = () => {
@@ -52,16 +53,25 @@ export class App {
         })
     }
 
-    cullLimit = 8
+    cullBatchSize = 30
+    doNotCullAt = 4
     cullCount = 0
     cullCountDone = 0
 
     public shouldCull(occ: number) {
         //
-        if (Object.keys(this.allTexts).length > START_CULLING_AFTER && occ < 3 && (this.cullCount++ % this.cullLimit)) {
+        if (
+            Object.keys(this.allTexts).length > START_CULLING_AFTER &&
+            occ < this.doNotCullAt &&
+            this.cullCount++ < this.cullBatchSize
+        ) {
             console.debug(`the weak has been culled n°${this.cullCountDone}/${this.cullCount} : ${this.cullCount - this.cullCountDone} left`)
             this.cullCountDone++
             return true
+        }
+
+        if (this.cullCount > this.cullBatchSize) {
+            this.cullCount = 0
         }
 
         return false
@@ -70,10 +80,8 @@ export class App {
     public addWordCount(text: string, occ = 1) {
         if (this.params.has("min") && !(occ >= Number(this.params.get("min"))))
             return
-
-        if (this.shouldCull(occ)) {
-            return
-        }
+        
+        if(this.shouldCull(occ))return
 
         if (this.allTexts[text]) {
             this.allTexts[text].occ = occ
@@ -81,7 +89,6 @@ export class App {
             //let newText = new Text(text, Object.keys(this.allTexts).length)
             let newText = new TextElem(text, Math.random() * Number.MAX_SAFE_INTEGER)
             newText.occ = occ
-
             this.allTexts[text] = newText
         }
 
@@ -93,10 +100,12 @@ export class App {
         let rdmAmplitude = 25
         //@ts-ignore
         Object.values(this.allTexts).forEach((text: TextElem) => {
+            if(text.isCulled) return
 
             let cos = Math.cos(text.id % (2 * Math.PI) + t)
             let sin = Math.sin(text.id % (2 * Math.PI) + t)
 
+            if(!text.elem) return
             let boxWidth = text.elem.offsetWidth;
             let boxHeight = text.elem.offsetHeight;
             let sincos = cos - sin
@@ -113,8 +122,8 @@ export class App {
              */
             let uvOcc = (1 - occRate) * Math.log1p(occRate) * 5
 
-            let colorUv1 = (1 - occRate) * Math.log1p(occRate)  * 4
-            let colorUv = Math.pow(Math.tan(colorUv1),2)/colorUv1
+            let colorUv1 = (1 - occRate) * Math.log1p(occRate) * 4
+            let colorUv = Math.pow(Math.tan(colorUv1), 2) / colorUv1
 
             if (occRate < 0.02) {
                 rdmAmplitude = 800
@@ -122,7 +131,7 @@ export class App {
 
             let rdmX = cos * text.rndX * rdmAmplitude
             let rdmY = sin * text.rndY * rdmAmplitude
-            
+
             const sizeXWithoutExtraParams = this.sizeX - boxWidth - Math.abs(rdmX)
             const sizeYWithoutExtraParams = this.sizeY - boxHeight - Math.abs(rdmY)
 
@@ -151,7 +160,7 @@ export class App {
             text.elem.style.left = possiblePosX + 'px';
             text.elem.style.top = possiblePosY + 'px'
 
-            text.elem.style.fontSize = `${7 * occRate + 1}em`;
+            text.elem.style.fontSize = `${7 * occRate + 0.7 + 0.4*text.rndX }em`;
             text.elem.style.zIndex = '' + Math.round(10000 * rawOccRate);
 
             //text.elem.style.color = `rgb(${colorUv1},${colorUv1},${colorUv})`
@@ -177,6 +186,7 @@ export class App {
 
             const [x, y, rot] = getXYRot(text, t)
 
+            if(!text.elem) return
             text.elem.style.top = y + 'px'
             text.elem.style.left = x + 'px';
             text.elem.style.transform = `rotate(${rot}deg)`;
