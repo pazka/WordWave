@@ -1,14 +1,15 @@
 ﻿import {Button, FormGroup, FormLabel, Link, Paper} from "@mui/material";
-import {getCount, getExcluded, getMeta, getRecorded, getRegistered} from "./services/rest";
+import {getCount, getCsvCount, getExcluded, getMeta, getRecorded, getRegistered} from "./services/rest";
 import {download} from "./services/file";
 
 export default (props) => {
 
     const fetchers = [
-        ['MetaInfo.txt', getMeta],
-        ['WordCount.txt', getCount],
-        ['Counted Words.txt', getRegistered],
-        ['Recorded Words.txt', getRecorded],
+        ['MetaInfo.json', getMeta],
+        ['WordOccurrences.json', getCount],
+        ['WordOccurrences.csv', getCsvCount],
+        ['Only Counted Words.txt', getRegistered],
+        ['All Recorded Words.txt', getRecorded],
         ['Excluded Words.txt', getExcluded]
     ]
 

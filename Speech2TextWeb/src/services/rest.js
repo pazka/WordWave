@@ -78,6 +78,13 @@ export function getMeta() {
     })
 }
 
+export function getCsvCount() {
+    return new Promise((resolve, reject) => {
+        let http = prepareRequest(baseUrl + '/words/current/csv_count', 'GET', null, resolve, reject)
+        http.send();
+    })
+}
+
 export function getCount() {
     return new Promise((resolve, reject) => {
         let http = prepareRequest(baseUrl + '/words/current/count', 'GET', null, resolve, reject)

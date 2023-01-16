@@ -79,6 +79,12 @@ def get_meta_state():
     return word_processor.current_words
 
 
+@app.route('/words/current/csv_count', methods=['GET'])
+@wrap_error()
+def get_meta_state_in_csv():
+    return word_processor.get_total_words_counted_in_csv_format()
+
+
 @app.route('/words/current/meta', methods=['GET'])
 @wrap_error()
 def get_word_state():

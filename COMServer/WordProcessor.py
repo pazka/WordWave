@@ -164,3 +164,14 @@ class WordProcessor:
         self.meta.max_occ = new_meta.max_occ
         self.meta.min_occ = new_meta.min_occ
         self.meta.total_word_counted = new_meta.total_word_counted
+
+    def get_total_words_counted_in_csv_format(self):
+        csv = "Word,NbOccurrences\n"
+
+        # sort words by count
+        sorted_words = sorted(self.current_words.items(), key=lambda x: x[1], reverse=True)
+
+        for word, count in sorted_words:
+            csv += f"{word},{count}\n"
+
+        return csv
