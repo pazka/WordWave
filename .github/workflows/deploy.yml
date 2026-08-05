@@ -1,0 +1,41 @@
+name: build-scan-push
+# Phase-2 CI (hosh.it): build -> Trivy gate (CRITICAL) -> push ghcr :ci + :sha.
+# Deliberately does NOT touch :latest — the box runs known-good mirrors. Promote a
+# validated build with: docker buildx imagetools create -t ghcr.io/pazka/wordwave:latest ghcr.io/pazka/wordwave:<sha>
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ghcr.io/pazka/wordwave:candidate
+      - name: Trivy gate (fail on CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/pazka/wordwave:candidate
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: push ci + sha tags
+        if: success()
+        run: |
+          docker tag ghcr.io/pazka/wordwave:candidate ghcr.io/pazka/wordwave:ci
+          docker tag ghcr.io/pazka/wordwave:candidate ghcr.io/pazka/wordwave:${{ github.sha }}
+          docker push ghcr.io/pazka/wordwave:ci
+          docker push ghcr.io/pazka/wordwave:${{ github.sha }}
