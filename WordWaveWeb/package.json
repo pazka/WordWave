@@ -26,6 +26,7 @@
     "three": "^0.135.0"
   },
   "devDependencies": {
+    "@types/node": "^16.18.126",
     "@types/three": "^0.134.0",
     "copy-webpack-plugin": "^10.2.4",
     "ts-loader": "^9.2.6",
