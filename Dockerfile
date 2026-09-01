@@ -1,7 +1,7 @@
 # ---- build stage: WordWaveWeb (three.js word cloud, webpack.prod.js) ----
 # Mirrors gulp buildFront + renameFrontIndex: dist/index.html is also
 # published as data.html (the URL the installation loads on the live site).
-FROM node:20-alpine AS wordwave-web
+FROM node:26-alpine AS wordwave-web
 WORKDIR /front
 COPY WordWaveWeb/package.json WordWaveWeb/package-lock.json ./
 RUN npm ci
@@ -12,7 +12,7 @@ RUN npm run build && cp dist/index.html dist/data.html
 # Mirrors gulp buildAdmin + renameAdminIndex: build/index.html is also
 # published as admin.html. Reproduces the exact live bundles
 # (static/js/main.4b672ae3.js, static/css/main.62b37043.css).
-FROM node:20-alpine AS admin-web
+FROM node:26-alpine AS admin-web
 WORKDIR /admin
 COPY Speech2TextWeb/package.json Speech2TextWeb/package-lock.json ./
 RUN npm ci
