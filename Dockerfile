@@ -20,7 +20,7 @@ COPY Speech2TextWeb/ ./
 RUN npm run build && cp build/index.html build/admin.html
 
 # ---- runtime ----
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /
 
