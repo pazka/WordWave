@@ -1,0 +1,66 @@
+name: ci
+# Upgrade safety net (see TESTING.md). Every PR (incl. Dependabot), main, and agent/** branches
+# (an agent gets CI without opening a PR). Builds nothing that is pushed.
+on:
+  pull_request:
+  push:
+    branches: [main, 'agent/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  server:
+    name: server tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    container: python:${{ matrix.python }}-slim
+    # 3.11 = the image today (gate). 3.14 = next: early warning only, known to fail until the
+    # pinned 2021 dependencies are refreshed (cffi 1.15.1 has no 3.14 wheel). See TESTING.md.
+    continue-on-error: ${{ matrix.next }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { python: '3.11', next: false }
+          - { python: '3.14', next: true }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: pip install --no-cache-dir -r COMServer/requirements.txt
+      - run: python -m unittest discover -s tests -v
+        working-directory: COMServer
+
+  fronts:
+    name: front builds (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node }}-alpine
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '26']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: WordWaveWeb (webpack)
+        working-directory: WordWaveWeb
+        run: npm ci --no-audit --no-fund && npm run build && test -s dist/index.html
+      - name: Speech2TextWeb (CRA)
+        working-directory: Speech2TextWeb
+        # CI=false like the Docker build: with CI=true react-scripts turns the existing lint
+        # warnings (UTF-8 BOMs, one unused var) into errors. See TESTING.md.
+        run: npm ci --no-audit --no-fund && CI=false npm run build && test -s build/index.html
+
+  smoke:
+    name: container smoke
+    needs: [server, fronts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          push: false
+          tags: wordwave:smoke
+      - run: bash scripts/smoke.sh wordwave:smoke

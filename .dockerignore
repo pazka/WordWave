@@ -1,0 +1,13 @@
+# Keep the build context small and free of local state and secrets.
+.git
+.github
+.env
+.env.*
+**/node_modules
+**/dist
+**/build
+**/__pycache__
+**/*.words
+COMServer/tests
+WordWave
+Speech2Text
