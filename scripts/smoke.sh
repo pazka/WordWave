@@ -36,6 +36,10 @@ code() { # code <expected> <curl args...>   body saved to $TMP/body
   [ "$got" = "$want" ] || { head -c 500 "$TMP/body" >&2; fail "expected $want got $got for: $*"; }
 }
 
+step "fails closed: no credentials in the environment -> the server refuses to start"
+if out="$(dk run --rm "$IMAGE" 2>&1)"; then fail "started without LOGIN/MDP/secret"; fi
+echo "$out" | grep -q 'The environment variable' || fail "unexpected failure without credentials: $(echo "$out" | tail -3)"
+
 step "start $IMAGE (cap_drop ALL, no-new-privileges)"
 dk run -d --name "$NAME" --cap-drop ALL --security-opt no-new-privileges:true \
   -e LOGIN=smoke-user -e MDP=smoke-pass-not-secret -e secret=smoke-secret-not-real -e PORT=80 \
@@ -58,9 +62,16 @@ grep -q 'id="root"' "$TMP/body" || fail "admin.html is not the CRA build"
 code 200 "$BASE/index.html"    # CRA admin index wins at /index.html (historical layout)
 grep -q 'id="root"' "$TMP/body" || fail "index.html is not the admin build"
 
-step "Socket.IO handshake (engine.io v4 polling)"
+step "Socket.IO handshake (engine.io v4 polling) and prod origin allow-list"
 code 200 "$BASE/socket.io/?EIO=4&transport=polling"
 grep -q '"sid"' "$TMP/body" || fail "no engine.io sid"
+code 200 -H 'Origin: https://wordwave.hosh.it' "$BASE/socket.io/?EIO=4&transport=polling"
+grep -q '"sid"' "$TMP/body" || fail "allowed origin refused"
+code 400 -H 'Origin: https://evil.example' "$BASE/socket.io/?EIO=4&transport=polling"
+grep -q 'Not an accepted origin' "$TMP/body" || fail "foreign origin: $(cat "$TMP/body")"
+acao() { curl -s -D - -o /dev/null -H "Origin: $1" "$BASE/words/current" | tr -d '\r' | sed -n 's/^[Aa]ccess-[Cc]ontrol-[Aa]llow-[Oo]rigin: //p'; }
+[ "$(acao https://alessiasanna.fr)" = https://alessiasanna.fr ] || fail "REST CORS: allowed origin not echoed"
+[ -z "$(acao https://evil.example)" ] || fail "REST CORS: foreign origin allowed"
 
 step "auth + word flow (text/plain, like Speech2TextWeb/src/services/rest.js)"
 code 401 -X POST "$BASE/login"

@@ -140,6 +140,22 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.client.get("/words/current/count").get_json(), {})
         self.assertIn(SENTENCE, self.client.get("/words/current/recorded").get_data(as_text=True))
 
+    # ---------------------------------------------------------------- CORS
+
+    def test_cors_headers(self):
+        # Test config allows "*" (prod allows the three alessiasanna.fr / wordwave.hosh.it origins).
+        # flask-cors echoes the request origin and varies on it.
+        r = self.client.get("/words/current", headers={"Origin": "https://somewhere.example"})
+        self.assertEqual(r.headers.get("Access-Control-Allow-Origin"), "https://somewhere.example")
+        self.assertIn("Origin", r.headers.get("Vary"))
+        pre = self.client.open("/words", method="OPTIONS", headers={
+            "Origin": "https://somewhere.example", "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type"})
+        self.assertEqual(pre.status_code, 200)
+        self.assertEqual(pre.headers.get("Access-Control-Allow-Origin"), "https://somewhere.example")
+        self.assertEqual(pre.headers.get("Access-Control-Allow-Methods"), "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT")
+        self.assertEqual(pre.headers.get("Access-Control-Allow-Headers").lower(), "authorization, content-type")
+
     # ---------------------------------------------------------------- admin endpoints
 
     def test_info_spec_swagger(self):
