@@ -1,13 +1,21 @@
+# Mirrors the deployment on the hosh.it box (/home/pazka/serious/WordWave). Credentials come from a
+# .env next to this file (see .env.example); never commit it.
 version: "3"
 services:
   wordwave:
     container_name: wordwave
-    image: pazka/wordwave:latest
+    image: ghcr.io/pazka/wordwave:latest
     build: .
-    restart: until_stopped
+    restart: unless-stopped
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
     ports:
-      - "9898:80"
-    env:
+      - "127.0.0.1:9898:80"
+    environment:
       - LOGIN=${LOGIN}
       - MDP=${MDP}
       - secret=${SECRET}
