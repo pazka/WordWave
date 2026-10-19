@@ -1,5 +1,5 @@
 bidict==0.21.4
-certifi==2021.5.30
+certifi==2026.7.22
 cffi==1.15.1
 chardet==4.0.0
 charset-normalizer==2.0.11
