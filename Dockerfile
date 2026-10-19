@@ -1,7 +1,7 @@
 # ---- build stage: WordWaveWeb (three.js word cloud, webpack.prod.js) ----
 # Mirrors gulp buildFront + renameFrontIndex: dist/index.html is also
 # published as data.html (the URL the installation loads on the live site).
-FROM node:20-alpine AS wordwave-web
+FROM node:26-alpine AS wordwave-web
 WORKDIR /front
 COPY WordWaveWeb/package.json WordWaveWeb/package-lock.json ./
 RUN npm ci
@@ -12,7 +12,7 @@ RUN npm run build && cp dist/index.html dist/data.html
 # Mirrors gulp buildAdmin + renameAdminIndex: build/index.html is also
 # published as admin.html. Reproduces the exact live bundles
 # (static/js/main.4b672ae3.js, static/css/main.62b37043.css).
-FROM node:20-alpine AS admin-web
+FROM node:26-alpine AS admin-web
 WORKDIR /admin
 COPY Speech2TextWeb/package.json Speech2TextWeb/package-lock.json ./
 RUN npm ci
@@ -20,7 +20,7 @@ COPY Speech2TextWeb/ ./
 RUN npm run build && cp build/index.html build/admin.html
 
 # ---- runtime ----
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /
 
@@ -40,9 +40,8 @@ COPY COMServer/config.prod.json ./config.json
 COPY --from=wordwave-web /front/dist/ ./static/
 COPY --from=admin-web /admin/build/ ./static/
 
-ENV secret=WillBeChangedButNotCommited
-ENV LOGIN=admin
-ENV MDP=admin
+# No default credentials: LOGIN, MDP and secret must come from the environment (compose .env).
+# Without them config.prod.json fails to resolve and the server refuses to start.
 ENV PORT=80
 
 EXPOSE 80
