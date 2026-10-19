@@ -7,9 +7,9 @@ it pins what WordWave does today so a Dependabot PR can be judged on its CI run.
 
 | part | runtime | what ships |
 |---|---|---|
-| `COMServer/` | Python 3.11 (`python:3.11-slim`) | Flask + Flask-SocketIO server, the whole image runtime |
-| `WordWaveWeb/` | Node 20 build stage | three.js word cloud → `static/data.html` |
-| `Speech2TextWeb/` | Node 20 build stage | CRA admin → `static/admin.html` and `static/index.html` |
+| `COMServer/` | Python 3.14 (`python:3.14-slim`) | Flask + Flask-SocketIO server, the whole image runtime |
+| `WordWaveWeb/` | Node 26 build stage | three.js word cloud → `static/data.html` |
+| `Speech2TextWeb/` | Node 26 build stage | CRA admin → `static/admin.html` and `static/index.html` |
 | `WordWave/` (Unity), `Speech2Text/` (desktop) | — | not in the image, not tested |
 
 ## Run it
@@ -48,13 +48,25 @@ non-blocking); `front builds (node 20|26)`; `container smoke` (builds the real D
 handshake, auth, a real word post (`text/plain`, as the admin UI sends it), open data, swagger, no
 tracebacks.
 
-## Upgrades checked (2026-10-19)
+## Changes and upgrades (2026-10-19)
 
-- **Node 20 → 26** (Dependabot #5): both fronts build, image smoke OK → **go**.
-- **Python 3.11 → 3.14** (Dependabot #6): **no-go as is.** `pip install` fails: `cffi==1.15.1` has no
-  3.14 wheel and the slim image has no compiler. Fix first (separate PR): refresh the pinned server
-  requirements (at least `cffi`, `cryptography`, `pyOpenSSL`, `MarkupSafe`; they are transitive pins from
-  an old `pip freeze`), make `server tests (python 3.14)` green, then merge #6.
+- **Images: Node 26 fronts + Python 3.14 server** (supersedes Dependabot #5 and #6).
+- **Server dependencies refreshed for 3.14.** The pins were an old `pip freeze`: `cffi`, `cryptography`,
+  `pyOpenSSL`, `requests` & co. were never imported and `cffi` 1.15.1 blocked 3.14; Werkzeug 2.0 uses
+  `ast.Str` (removed in Python 3.12). Now: Flask 3.1, Werkzeug 3.1, Flask-SocketIO 5.7, python-socketio
+  5.17, flask-cors 6, flask-swagger-ui 5, all pinned exactly (incl. transitives).
+  Code adapted, behaviour unchanged: `/info` reads `app.config['ENV']` (Flask removed `app.env`),
+  broadcasts use a server-level `emit` (python-socketio removed `broadcast=`), production `run` passes
+  `allow_unsafe_werkzeug=True` (same Werkzeug server as before; Flask-SocketIO now asks for the opt-in).
+  Before the upgrade the suite was extended and pinned on the OLD image: REST CORS (origin echoed, `Vary`,
+  allowed methods/headers) in the tests; Socket.IO and REST origin allow-lists in the smoke. 16/16 on Python
+  3.11 and 3.14; smoke OK on both images.
+- **Fails closed**: the Dockerfile no longer bakes `LOGIN=admin MDP=admin`; without credentials the server
+  refuses to start (asserted by the smoke).
+- `docker-compose.yml` mirrors the box (ghcr image, `127.0.0.1:9898`, `no-new-privileges`, `cap_drop ALL`
+  + `NET_BIND_SERVICE`); it used an invalid `env:` key, so its credentials were ignored. The tracked `.env`
+  (placeholders only) became `.env.example`; `.env` is git-ignored. Checked on the box (read-only,
+  2026-10-19): the real `.env` there differs from the repo one and is the one compose uses.
 
 ## Known bugs and gaps (pinned, not changed)
 
@@ -65,10 +77,6 @@ tracebacks.
   to the code, i.e. in `/` of the image.
 - The image runs as **root**, has no `HEALTHCHECK`, and cannot run with a read-only rootfs (log in `/`).
 - `wrap_errors` returns Python tracebacks to the client in production.
-- The Dockerfile sets default `LOGIN=admin`, `MDP=admin` and a placeholder `secret`; production must
-  override them.
-- A `.env` file is tracked in git (not read by this work). If it ever held a real secret, rotate it and
-  remove it from the repo.
 - `react-scripts build` fails with `CI=true` on existing lint warnings (BOMs, an unused variable); CI
   builds with `CI=false`, like the Docker build.
-- Flask's development server serves production (`Werkzeug` warning in the logs).
+- Flask's development server (Werkzeug) serves production.

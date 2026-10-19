@@ -16,15 +16,11 @@ jobs:
     name: server tests (python ${{ matrix.python }})
     runs-on: ubuntu-latest
     container: python:${{ matrix.python }}-slim
-    # 3.11 = the image today (gate). 3.14 = next: early warning only, known to fail until the
-    # pinned 2021 dependencies are refreshed (cffi 1.15.1 has no 3.14 wheel). See TESTING.md.
-    continue-on-error: ${{ matrix.next }}
+    # 3.14 = the image; 3.11 kept as the previous runtime. Both are gates.
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { python: '3.11', next: false }
-          - { python: '3.14', next: true }
+        python: ['3.11', '3.14']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: pip install --no-cache-dir -r COMServer/requirements.txt
