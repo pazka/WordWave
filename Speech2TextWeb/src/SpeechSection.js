@@ -8,7 +8,6 @@ import {
     stopSpeechRecognition
 } from "./services/speech-2-text";
 import {tryKeepAwake} from "./services/wake-screen";
-import SelectInput from "@mui/material/Select/SelectInput";
 import {availableLangs, getCurrentLangOrDefault} from "./services/lang";
 
 interface Props {
