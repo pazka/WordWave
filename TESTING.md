@@ -46,7 +46,12 @@ non-blocking); `front builds (node 20|26)`; `container smoke` (builds the real D
 
 `scripts/smoke.sh`: both web builds served (`/data.html`, `/admin.html`, `/index.html`), engine.io
 handshake, auth, a real word post (`text/plain`, as the admin UI sends it), open data, swagger, no
-tracebacks.
+tracebacks, and the admin bundle check below on the JS the image serves.
+
+`scripts/check-admin-bundle.sh <build dir>`: the built admin bundle still contains the admin features
+(login form fields/route/Basic auth, manual text + exclude-word sending, reset/reload of the visuals,
+speech-recognition controls, downloads, `/info`), by visible text, field names and REST routes. Runs in
+the CI `front builds` job (on `Speech2TextWeb/build`) and in the smoke. Passes on the pre-upgrade bundle.
 
 ## Changes and upgrades (2026-10-19)
 
@@ -67,6 +72,21 @@ tracebacks.
   + `NET_BIND_SERVICE`); it used an invalid `env:` key, so its credentials were ignored. The tracked `.env`
   (placeholders only) became `.env.example`; `.env` is git-ignored. Checked on the box (read-only,
   2026-10-19): the real `.env` there differs from the repo one and is the one compose uses.
+- **Front dependencies** (supersedes Dependabot #17, #18, #19). Admin feature check added first and green
+  on the old bundle.
+  - #17 minor/patch group as generated, plus `typescript` 4.9 → 5.9 (`@types/three` 0.186 needs TS ≥ 5.6;
+    TS 7 is not usable with ts-loader). `three` never reaches `bundle.js` (type-only/unused imports), so the
+    word cloud's shipped code only changes by `socket.io-client` 4.8; live `new_text` updates checked in a
+    browser. `react-scripts` 5.0.1 drops a few obsolete CSS prefixes (`-webkit-fit-content`).
+  - #18 + #19 together: `@mui/material` and `@mui/icons-material` 9.5, React/ReactDOM 18.3 (MUI 9's
+    `react/jsx-runtime` import does not resolve with React 17 under CRA), `react-redux` 9.3 (v7 refuses
+    React 18; it is not imported anywhere). Unused deep import `@mui/material/Select/SelectInput` removed
+    (not exported by MUI 9). `index.js` still uses `ReactDOM.render` (React 18 legacy root).
+  - Checked in Chrome against the old image: same layout/styles (computed styles + geometry of every
+    element), login, word sending, reset, language menu, switches, slider (pointer and keyboard);
+    screenshots identical except sub-pixel anti-aliasing on the two switch thumbs.
+  - Not covered: `npm test` (CRA/jest, `App.test.js`) is not part of CI; `@testing-library/react` 12
+    stays (unused by the build).
 
 ## Known bugs and gaps (pinned, not changed)
 
