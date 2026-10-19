@@ -45,6 +45,8 @@ jobs:
         # CI=false like the Docker build: with CI=true react-scripts turns the existing lint
         # warnings (UTF-8 BOMs, one unused var) into errors. See TESTING.md.
         run: npm ci --no-audit --no-fund && CI=false npm run build && test -s build/index.html
+      - name: Speech2TextWeb admin features in the bundle
+        run: sh scripts/check-admin-bundle.sh Speech2TextWeb/build
 
   smoke:
     name: container smoke

@@ -59,6 +59,15 @@ code 200 "$BASE/data.html"     # WordWaveWeb (three.js visualisation) — the UR
 grep -qi '<script' "$TMP/body" || fail "data.html has no script"
 code 200 "$BASE/admin.html"    # Speech2TextWeb (CRA admin)
 grep -q 'id="root"' "$TMP/body" || fail "admin.html is not the CRA build"
+step "admin UI bundle served by the image still has the admin features (scripts/check-admin-bundle.sh)"
+mkdir -p "$TMP/admin/static/js"
+srcs="$(grep -o 'src="[^"]*static/js/[^"]*\.js"' "$TMP/body" | sed 's/^src="//; s/"$//')"
+[ -n "$srcs" ] || fail "admin.html references no static/js bundle"
+for src in $srcs; do
+  code 200 "$BASE/${src#/}"
+  cp "$TMP/body" "$TMP/admin/static/js/$(basename "$src")"
+done
+sh "$(dirname "$0")/check-admin-bundle.sh" "$TMP/admin" || fail "admin bundle lost features"
 code 200 "$BASE/index.html"    # CRA admin index wins at /index.html (historical layout)
 grep -q 'id="root"' "$TMP/body" || fail "index.html is not the admin build"
 
