@@ -13,13 +13,14 @@ class SocketCom:
         self.app = app
 
     def broadcast_new_text(self, data):
-        self.io.emit('new_text', data, broadcast=True)
+        # A server-level emit goes to every client (python-socketio 5 dropped broadcast=).
+        self.io.emit('new_text', data)
 
     def broadcast_reset(self):
-        self.io.emit('reset', None, broadcast=True)
+        self.io.emit('reset', None)
 
     def broadcast_reload(self):
-        self.io.emit('reload', None, broadcast=True)
+        self.io.emit('reload', None)
 
     def destroy(self):
-        self.io.emit('close', None, broadcast=True)
+        self.io.emit('close', None)

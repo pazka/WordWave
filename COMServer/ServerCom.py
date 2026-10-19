@@ -43,7 +43,8 @@ def run():
     if get_config('debug'):
         SocketCom.io.run(app=app, port=get_config('port'))
     else:
-        SocketCom.io.run(app=app, host="0.0.0.0", port=get_config('port'))
+        # Same Werkzeug server as before; Flask-SocketIO >= 5.3 only requires the explicit opt-in.
+        SocketCom.io.run(app=app, host="0.0.0.0", port=get_config('port'), allow_unsafe_werkzeug=True)
 
     print(f'REST/SOCKET listening to port : {get_config("port")}')
 

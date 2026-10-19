@@ -29,7 +29,8 @@ def get_version():
     global curr_path
     global app
     with open(curr_path + '/version', 'r') as f:
-        return f'WordWave COM Server V{f.readline()} on env {app.env}'
+        # Flask 2.3 removed app.env; ServerCom.init stores the same value in app.config['ENV'].
+        return f'WordWave COM Server V{f.readline()} on env {app.config["ENV"]}'
 
 
 @app.route("/spec")
