@@ -10,8 +10,9 @@ RUN npm run build && cp dist/index.html dist/data.html
 
 # ---- build stage: Speech2TextWeb (CRA admin UI) ----
 # Mirrors gulp buildAdmin + renameAdminIndex: build/index.html is also
-# published as admin.html. Reproduces the exact live bundles
-# (static/js/main.4b672ae3.js, static/css/main.62b37043.css).
+# published as admin.html. Until react-scripts 5.0.1 (2026-10) this reproduced the exact
+# live bundles (main.4b672ae3.js / main.62b37043.css); the rendered admin UI is unchanged
+# (see TESTING.md) and scripts/check-admin-bundle.sh guards its features.
 FROM node:26-alpine AS admin-web
 WORKDIR /admin
 COPY Speech2TextWeb/package.json Speech2TextWeb/package-lock.json ./
