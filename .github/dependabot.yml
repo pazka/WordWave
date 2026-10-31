@@ -30,5 +30,8 @@ updates:
     cooldown: { default-days: 7 }
     open-pull-requests-limit: 3
     groups:
+      # react and react-dom peer-pin each other: bumped alone, either one fails npm ci (ERESOLVE, #23).
+      react:
+        patterns: ["react", "react-dom", "@testing-library/react", "@types/react", "@types/react-dom"]
       npm-minor-patch:
         update-types: [minor, patch]
