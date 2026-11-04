@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/node": "^16.18.126",
     "@types/three": "^0.186.0",
-    "copy-webpack-plugin": "^10.2.4",
+    "copy-webpack-plugin": "^14.0.0",
     "ts-loader": "^9.2.6",
     "typescript": "^5.9.3",
     "webpack": "^5.112.2",
