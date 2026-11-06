@@ -1,0 +1,17 @@
+# The hosh.it box's LEGACY compose for wordwave (/root/hosh-deploy/wordwave/docker-compose.yml, as of
+# 2026-11-06), used by scripts/compat-smoke.sh legacy. Only the image (IMAGE), the published host port
+# (LEGACY_PORT, 9898 on the box) and the container name differ, so CI can run it. Every new image must
+# keep working with this file unchanged until the box moves to hosh-deploy (DEPLOY.md, cutover).
+services:
+  wordwave:
+    container_name: ${NAME:-wordwave-legacy-test}
+    image: ${IMAGE:?IMAGE}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    restart: unless-stopped
+    ports: ["127.0.0.1:${LEGACY_PORT:-19898}:80"]
+    environment:
+      - LOGIN=${LOGIN}
+      - MDP=${MDP}
+      - secret=${SECRET}
