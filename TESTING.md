@@ -23,6 +23,7 @@ docker run --rm -v "$PWD/COMServer":/src:ro wordwave:smoke \
 # container smoke
 bash scripts/smoke.sh wordwave:smoke
 bash scripts/compat-smoke.sh legacy wordwave:smoke   # the box's legacy compose
+bash scripts/compat-smoke.sh template wordwave:smoke # the hosh-deploy compose (docker-compose.example.yml)
 
 # a base bump before Dependabot's PR lands
 sed -E 's/^FROM node:[^ ]+ AS/FROM node:26-alpine AS/' Dockerfile | docker build -f - -t wordwave:next .
@@ -53,6 +54,9 @@ the guard rejects `node:24.21.0-alpine` (the test of the test). Node base images
 - Word flow: normalisation, stop words, plural folding, counts, meta, `new_text` / `reset` / `reload`
   Socket.IO broadcasts, every open-data endpoint (`/words/current…`, `csv_count`, `stop`).
 - `/info`, `/spec`, `/swagger/`; config `${ENV}` placeholders and the prod config reading secrets from env.
+- Hosting (hosh-deploy migration): `DATA_DIR` moves the timestamped word log (unset/empty = next to the code,
+  as before); `GET`/`HEAD /healthz` → 200 `{"status":"ok","checks":{"word_log","web_builds"},"words"}`, 503
+  when the log is closed or the web builds are missing, no secret in the answer.
 
 `scripts/smoke.sh`: both web builds served (`/data.html`, `/admin.html`, `/index.html`), engine.io
 handshake, auth, a real word post (`text/plain`, as the admin UI sends it), open data, swagger, no
@@ -64,7 +68,17 @@ image with the box's legacy compose unchanged (`tests/compose/legacy.yml`: defau
 `COMServer/selfcheck.py --write`: both web builds, open data, `/login`, and a stdlib Socket.IO client (engine.io
 v4 polling, `Origin: https://wordwave.hosh.it`) that receives the `new_text` broadcast of a real word post. The
 word log must be in `/*.words` and still be there after `docker compose restart`. Every image must pass it
-until the box has moved to hosh-deploy (DEPLOY.md). `selfcheck.py` without `--write` changes no state.
+until the box has moved to hosh-deploy (DEPLOY.md). `selfcheck.py` without `--write` changes no state; it is
+also the box's POST_DEPLOY (`deploy/hosh-deploy.conf`).
+
+`scripts/compat-smoke.sh template IMAGE` (step "Compat - hosh-deploy compose"): `docker-compose.example.yml` +
+`wordwave.env` made from `.env.example`, as in `/srv/wordwave` on the box. First the checks of `hosh-deploy
+register` (`deploy/hosh-deploy.conf` values, `# required:` secrets, the route template, and the compose
+hardening check copied from the box into `scripts/check-compose-hardening.py`), then: uid 10001, only `/data`
+and `/tmp` writable, the same `selfcheck.py --write`, word log in the `wordwave-data` volume, docker health
+`healthy`, POST_DEPLOY run with `docker exec` as a plain argv, then `compose down` + `up` (container recreated,
+volume kept) and the log read back. Both modes also check `/healthz` and the image HEALTHCHECK, and
+`release.yml` runs `smoke.sh` + both modes on the candidate before pushing anything.
 
 `scripts/check-admin-bundle.sh <build dir>`: the built admin bundle still contains the admin features
 (login form fields/route/Basic auth, manual text + exclude-word sending, reset/reload of the visuals,
@@ -111,9 +125,10 @@ the CI `front builds` job (on `Speech2TextWeb/build`) and in the smoke. Passes o
 - **Restart loses counts**: the word log is opened `a+` (cursor at the end), so the replay in
   `WordProcessor.__init__` reads nothing. The text is still on disk (`/words/current/recorded`).
 - `get_possible_simplifications`: the `"es"` branch compares a 1-char slice and never fires.
-- `DELETE /words` (and every boot with `word_file: ""` in prod) creates a timestamped `.words` file next
-  to the code, i.e. in `/` of the image.
-- The image runs as **root**, has no `HEALTHCHECK`, and cannot run with a read-only rootfs (log in `/`).
+- `DELETE /words` (and every boot with `word_file: ""` in prod) creates a new timestamped `.words` file in
+  `DATA_DIR` (default: next to the code, i.e. `/` of the image; `/data` under hosh-deploy).
+- The image's default user is **root** and its defaults write in `/` (kept for the box's legacy compose);
+  the hosh-deploy compose runs it as 10001 with a read-only rootfs (`PORT=8000`, `DATA_DIR=/data`).
 - `wrap_errors` returns Python tracebacks to the client in production.
 - `react-scripts build` fails with `CI=true` on existing lint warnings (BOMs, an unused variable); CI
   builds with `CI=false`, like the Docker build.

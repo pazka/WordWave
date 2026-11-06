@@ -43,8 +43,17 @@ COPY --from=admin-web /admin/build/ ./static/
 
 # No default credentials: LOGIN, MDP and secret must come from the environment (compose .env).
 # Without them config.prod.json fails to resolve and the server refuses to start.
+# PORT and DATA_DIR are env-driven: the defaults (port 80, word log next to the code in /) are the
+# legacy box compose; the hosh-deploy compose sets PORT=8000 and DATA_DIR=/data (docker-compose.example.yml).
+# The image's default user stays root for that legacy compose; hosh-deploy runs it as 10001, read-only.
+# /data owned by 10001: a new named volume mounted there inherits it (unused by the legacy compose).
+RUN mkdir -p /data && chown 10001:10001 /data
 ENV PORT=80
 
 EXPOSE 80
+
+# GET /healthz = word log writable + web builds present (no curl in the image: python).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["python", "-c", "import os, sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/healthz' % os.environ.get('PORT', '80'), timeout=4).status == 200 else 1)"]
 
 CMD [ "python", "app.py" ]

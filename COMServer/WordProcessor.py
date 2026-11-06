@@ -12,8 +12,10 @@ class WordProcessor:
         if path and path != "":
             self._log_file = open(path, 'a+', encoding="utf-8")
         else:
+            # DATA_DIR (hosh-deploy: the /data volume); unset or empty = next to the code, as before.
+            log_dir = os.environ.get("DATA_DIR") or curr_path
             self._log_file = open(
-                f'{curr_path}/{datetime.now().strftime("%m%d%Y_%H%M%S")}.words', 'a+', encoding="utf-8")
+                f'{log_dir}/{datetime.now().strftime("%m%d%Y_%H%M%S")}.words', 'a+', encoding="utf-8")
         self._log_file.flush()
 
         self.mutex = threading.Lock()

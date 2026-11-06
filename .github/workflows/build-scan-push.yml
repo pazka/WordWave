@@ -1,0 +1,52 @@
+name: build-scan-push
+# (File renamed from deploy.yml in 2026-11 so that deploy.yml is the hosh-deploy workflow of the box
+# standard; the workflow name is unchanged: security-autofix.yml listens to "build-scan-push".)
+# Phase-2 CI (hosh.it): build -> Trivy gate (CRITICAL) -> push ghcr :ci + :sha.
+# Deliberately does NOT touch :latest - the box runs known-good mirrors. Promote a
+# validated build with: docker buildx imagetools create -t ghcr.io/pazka/wordwave:latest ghcr.io/pazka/wordwave:<sha>
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ghcr.io/pazka/wordwave:candidate
+      # Node guardrail (pazka/hosh-management#5): nothing built on an unpatched/EOL Node is pushed.
+      # Node only exists in the front build stages (runtime = python), so check those.
+      - name: Node guardrail on the build stages
+        run: |
+          set -euo pipefail
+          for stage in wordwave-web admin-web; do
+            docker buildx build --target "$stage" --load -t "wordwave-$stage:check" .
+            bash scripts/check-node-version.sh "wordwave-$stage:check"
+          done
+      - name: Trivy gate (fail on CRITICAL)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/pazka/wordwave:candidate
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: push ci + sha tags
+        if: success()
+        run: |
+          docker tag ghcr.io/pazka/wordwave:candidate ghcr.io/pazka/wordwave:ci
+          docker tag ghcr.io/pazka/wordwave:candidate ghcr.io/pazka/wordwave:${{ github.sha }}
+          docker push ghcr.io/pazka/wordwave:ci
+          docker push ghcr.io/pazka/wordwave:${{ github.sha }}

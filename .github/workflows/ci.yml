@@ -66,6 +66,10 @@ jobs:
       # broadcast and the word log surviving a container restart.
       - name: Compat - legacy box compose
         run: bash scripts/compat-smoke.sh legacy wordwave:smoke
+      # The hosh-deploy compose (docker-compose.example.yml + .env.example as on the box): uid 10001,
+      # read-only rootfs, PORT=8000, word log in the wordwave-data volume, register checks, POST_DEPLOY.
+      - name: Compat - hosh-deploy compose (box standard)
+        run: bash scripts/compat-smoke.sh template wordwave:smoke
       # Node guardrail (pazka/hosh-management#5, CVE-2026-111497). Node only exists in the two
       # front build stages (the runtime is python), so those stages are built and checked.
       - name: Node guardrail on the build stages
