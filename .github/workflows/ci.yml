@@ -62,6 +62,10 @@ jobs:
           push: false
           tags: wordwave:smoke
       - run: bash scripts/smoke.sh wordwave:smoke
+      # The box's legacy compose, unchanged (tests/compose/legacy.yml): capability incl. a Socket.IO
+      # broadcast and the word log surviving a container restart.
+      - name: Compat - legacy box compose
+        run: bash scripts/compat-smoke.sh legacy wordwave:smoke
       # Node guardrail (pazka/hosh-management#5, CVE-2026-111497). Node only exists in the two
       # front build stages (the runtime is python), so those stages are built and checked.
       - name: Node guardrail on the build stages

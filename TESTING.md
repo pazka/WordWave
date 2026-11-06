@@ -22,6 +22,7 @@ docker run --rm -v "$PWD/COMServer":/src:ro wordwave:smoke \
 
 # container smoke
 bash scripts/smoke.sh wordwave:smoke
+bash scripts/compat-smoke.sh legacy wordwave:smoke   # the box's legacy compose
 
 # a base bump before Dependabot's PR lands
 sed -E 's/^FROM node:[^ ]+ AS/FROM node:26-alpine AS/' Dockerfile | docker build -f - -t wordwave:next .
@@ -56,6 +57,14 @@ the guard rejects `node:24.21.0-alpine` (the test of the test). Node base images
 `scripts/smoke.sh`: both web builds served (`/data.html`, `/admin.html`, `/index.html`), engine.io
 handshake, auth, a real word post (`text/plain`, as the admin UI sends it), open data, swagger, no
 tracebacks, and the admin bundle check below on the JS the image serves.
+
+`scripts/compat-smoke.sh legacy IMAGE` (CI `container smoke`, step "Compat - legacy box compose"): runs the
+image with the box's legacy compose unchanged (`tests/compose/legacy.yml`: default user = root, port 80,
+`cap_drop ALL` + `NET_BIND_SERVICE`, `LOGIN`/`MDP`/`secret` env) and proves capability with
+`COMServer/selfcheck.py --write`: both web builds, open data, `/login`, and a stdlib Socket.IO client (engine.io
+v4 polling, `Origin: https://wordwave.hosh.it`) that receives the `new_text` broadcast of a real word post. The
+word log must be in `/*.words` and still be there after `docker compose restart`. Every image must pass it
+until the box has moved to hosh-deploy (DEPLOY.md). `selfcheck.py` without `--write` changes no state.
 
 `scripts/check-admin-bundle.sh <build dir>`: the built admin bundle still contains the admin features
 (login form fields/route/Basic auth, manual text + exclude-word sending, reset/reload of the visuals,
