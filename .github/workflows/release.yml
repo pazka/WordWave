@@ -75,6 +75,15 @@ jobs:
           context: .
           load: true
           tags: ghcr.io/pazka/wordwave:candidate
+      # Node guardrail (pazka/hosh-management#5): an image built on an unpatched/EOL Node is never
+      # pushed. Node only exists in the front build stages (runtime = python), so check those.
+      - name: Node guardrail on the build stages
+        run: |
+          set -euo pipefail
+          for stage in wordwave-web admin-web; do
+            docker buildx build --target "$stage" --load -t "wordwave-$stage:check" .
+            bash scripts/check-node-version.sh "wordwave-$stage:check"
+          done
       - name: Trivy scan (CRITICAL; blocking unless TRIVY_POLICY=warn)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
