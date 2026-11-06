@@ -24,7 +24,7 @@ docker run --rm -v "$PWD/COMServer":/src:ro wordwave:smoke \
 bash scripts/smoke.sh wordwave:smoke
 
 # a base bump before Dependabot's PR lands
-sed 's/node:20-alpine/node:26-alpine/g' Dockerfile | docker build -f - -t wordwave:next .
+sed -E 's/^FROM node:[^ ]+ AS/FROM node:26-alpine AS/' Dockerfile | docker build -f - -t wordwave:next .
 bash scripts/smoke.sh wordwave:next
 ```
 
@@ -33,8 +33,17 @@ bash scripts/smoke.sh wordwave:next
 ## CI (`.github/workflows/ci.yml`)
 
 PRs, `main`, `agent/**`. Jobs: `server tests (python 3.11)` (gate) and `(python 3.14)` (early warning,
-non-blocking); `front builds (node 20|26)`; `container smoke` (builds the real Dockerfile, runs
+non-blocking); `front builds (node 26)`; `container smoke` (builds the real Dockerfile, runs
 `scripts/smoke.sh`). A Dependabot PR that bumps a base image builds that base in `container smoke`.
+
+**Node guardrail** (pazka/hosh-management#5, CVE-2026-111497): `scripts/check-node-version.sh IMAGE`
+fails if the image's Node is an EOL line or below the patched minimum of its line (minimums bumped by
+the daily security routine). Node only exists in the two front build stages (the runtime is
+`python:3.14-slim`), so `container smoke`, `release.yml` and `build-scan-push` build `--target
+wordwave-web` / `--target admin-web` and check them, before anything is pushed. `container smoke` also
+asserts that the runtime image has no `node` (if it ever does, check the runtime image too) and that
+the guard rejects `node:24.21.0-alpine` (the test of the test). Node base images are pinned
+`node:26.13.0-alpine@sha256:…` (Dependabot `docker` bumps tag and digest together).
 
 ## What is covered
 

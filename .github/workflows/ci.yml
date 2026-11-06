@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', '26']
+        node: ['26']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: WordWaveWeb (webpack)
@@ -62,3 +62,20 @@ jobs:
           push: false
           tags: wordwave:smoke
       - run: bash scripts/smoke.sh wordwave:smoke
+      # Node guardrail (pazka/hosh-management#5, CVE-2026-111497). Node only exists in the two
+      # front build stages (the runtime is python), so those stages are built and checked.
+      - name: Node guardrail on the build stages
+        run: |
+          set -euo pipefail
+          for stage in wordwave-web admin-web; do
+            docker buildx build --target "$stage" --load -t "wordwave-$stage:check" .
+            bash scripts/check-node-version.sh "wordwave-$stage:check"
+          done
+      - name: Runtime image ships no Node (else the guardrail must check it too)
+        run: |
+          if docker run --rm --network none --entrypoint node wordwave:smoke -v; then
+            echo "::error::wordwave:smoke now contains node: run scripts/check-node-version.sh on it"
+            exit 1
+          fi
+      - name: Guardrail test - it rejects an unpatched Node (24.21.0)
+        run: '! bash scripts/check-node-version.sh node:24.21.0-alpine'
