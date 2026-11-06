@@ -1,0 +1,48 @@
+# wordwave on the hosh.it box through hosh-deploy (no secrets here). On the box it becomes
+# /srv/wordwave/docker-compose.yml, validated and pinned by `hosh-deploy register` (any later change
+# needs a re-register). Every site-specific value comes from wordwave.env (interpolation AND container env).
+# Box standard (hosh-migration 11-BOX-STANDARD.md): published on a LOOPBACK port only; the edge
+# Traefik (host network, file provider) routes wordwave.hosh.it to it (route rendered by hosh-deploy
+# from deploy/traefik-route.yml.tmpl). Same URLs as before: the Unity client and the WordWaveWeb front
+# keep connecting (Socket.IO) to https://wordwave.hosh.it.
+# hosh-deploy refuses: root user, writable rootfs, missing cap_drop ALL / no-new-privileges /
+# healthcheck, privileged, host network/pid/ipc, devices, bind mounts, non-loopback ports.
+# The legacy box compose (docker-compose.yml, tests/compose/legacy.yml) keeps working with the same image.
+name: wordwave            # fixed compose project name (whatever the checkout dir)
+services:
+  wordwave:
+    image: ${WORDWAVE_IMAGE:-ghcr.io/pazka/wordwave:latest}
+    container_name: wordwave
+    restart: unless-stopped
+    env_file: ./wordwave.env          # chmod 600: LOGIN, MDP, SECRET (+ the two deployment lines)
+    environment:
+      PORT: "8000"                    # image default 80 = legacy compose
+      DATA_DIR: /data                 # word logs (*.words); image default = / (legacy)
+      secret: ${SECRET:?SECRET is not set in wordwave.env}   # the server reads the Flask secret as `secret`
+    volumes:
+      - wordwave-data:/data           # ALL state lives here (backed up monthly with /var/lib/docker/volumes)
+    # --- hardening (box standard) ---
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    user: "10001:10001"
+    pids_limit: 128
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+    ports:
+      - "${WORDWAVE_BIND:-127.0.0.1:9140}:8000"   # loopback only — never 0.0.0.0
+
+volumes:
+  wordwave-data:
+    name: wordwave-data       # exact docker volume name

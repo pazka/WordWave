@@ -171,6 +171,61 @@ class ServerTest(unittest.TestCase):
         self.assertIn("swagger-ui", ui.get_data(as_text=True))
 
 
+class HostingTest(unittest.TestCase):
+    """hosh-deploy migration: DATA_DIR moves the word log, /healthz proves capability."""
+
+    def tearDown(self):
+        os.environ.pop("DATA_DIR", None)
+
+    def test_word_log_goes_to_data_dir_when_set(self):
+        data = tempfile.mkdtemp(dir=TMP)
+        os.environ["DATA_DIR"] = data
+        wp = WordProcessor()
+        wp.register_text("maison")
+        wp.destroy()
+        logs = glob.glob(os.path.join(data, "*.words"))
+        self.assertEqual(len(logs), 1)
+        with open(logs[0], encoding="utf-8") as f:
+            self.assertIn("maison", f.read())
+
+    def test_word_log_stays_next_to_the_code_by_default(self):
+        for value in (None, ""):
+            if value is not None:
+                os.environ["DATA_DIR"] = value
+            before = set(glob.glob(os.path.join(SERVER_DIR, "*.words")))
+            wp = WordProcessor()
+            wp.destroy()
+            new = set(glob.glob(os.path.join(SERVER_DIR, "*.words"))) - before
+            self.assertEqual(len(new), 1, value)
+            for f in new:
+                os.remove(f)
+
+    def test_healthz(self):
+        static = tempfile.mkdtemp(dir=TMP)
+        old_static, old_wp = APP.static_folder, ServerCom.word_processor
+        ServerCom.word_processor = WordProcessor(os.path.join(TMP, "health.words"))
+        client = APP.test_client()
+        try:
+            APP.static_folder = static
+            r = client.get("/healthz")
+            self.assertEqual(r.status_code, 503)  # no web builds
+            self.assertEqual(r.get_json()["checks"], {"word_log": True, "web_builds": False})
+            for name in ("data.html", "admin.html"):
+                open(os.path.join(static, name), "w").close()
+            r = client.get("/healthz")
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.get_json(), {"status": "ok", "words": 0,
+                                            "checks": {"word_log": True, "web_builds": True}})
+            self.assertNotIn("test-password", r.get_data(as_text=True))
+            self.assertEqual(client.head("/healthz").status_code, 200)
+            ServerCom.word_processor.destroy()  # closed log = no capability
+            r = client.get("/healthz")
+            self.assertEqual((r.status_code, r.get_json()["status"]), (503, "error"))
+        finally:
+            APP.static_folder = old_static
+            ServerCom.word_processor = old_wp
+
+
 class WordProcessorTest(unittest.TestCase):
     def setUp(self):
         self.wp = WordProcessor(tempfile.mktemp(suffix=".words", dir=TMP))

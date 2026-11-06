@@ -18,7 +18,12 @@ name: release
 #   secrets.DOKPLOY_WEBHOOK  Dokploy deploy-webhook URL, POSTed after :latest is pushed.
 #                         Unset/empty = a notice is printed and the run still succeeds.
 #
-# The build-scan-push workflow (deploy.yml) is untouched: it keeps pushing :ci + :<sha> only.
+# The build-scan-push workflow (build-scan-push.yml) keeps pushing :ci + :<sha> only.
+#
+# hosh-deploy (box standard, Decision #16): a release tag vX.Y.Z (no '-') then runs the `deploy` job
+# (deploy.yml): the box pulls :vX.Y.Z, verifies it and rolls back by itself. While the repo has no
+# HOSH_DEPLOY_KEY secret (before the cutover, DEPLOY.md) that job only prints a notice, so a release
+# builds and pushes images exactly as before. Repo variable HOSH_AUTODEPLOY=false disables it.
 on:
   push:
     tags: ['v*']
@@ -37,6 +42,9 @@ jobs:
     # Tag pushes and manual runs always go; branch pushes only when DEPLOY_TRIGGER == 'main'.
     if: github.event_name != 'push' || github.ref_type == 'tag' || vars.DEPLOY_TRIGGER == 'main'
     runs-on: ubuntu-latest
+    outputs:
+      primary: ${{ steps.meta.outputs.primary }}
+      latest: ${{ steps.meta.outputs.latest }}
     steps:
       - uses: actions/checkout@v7
       - name: compute release tags
@@ -91,6 +99,14 @@ jobs:
           severity: CRITICAL
           exit-code: ${{ vars.TRIVY_POLICY == 'warn' && '0' || '1' }}
           ignore-unfixed: true
+      # Nothing is pushed unless the image works with BOTH composes: the box's legacy one (still live
+      # until the cutover) and the hosh-deploy one. See TESTING.md.
+      - name: Capability smoke - legacy compose and hosh-deploy compose
+        run: |
+          set -euo pipefail
+          bash scripts/smoke.sh "$IMAGE:candidate"
+          bash scripts/compat-smoke.sh legacy "$IMAGE:candidate"
+          bash scripts/compat-smoke.sh template "$IMAGE:candidate"
       - name: push release tags
         env:
           PRIMARY: ${{ steps.meta.outputs.primary }}
@@ -119,3 +135,15 @@ jobs:
             exit 0
           fi
           curl -fsS -X POST "$DOKPLOY_WEBHOOK"
+
+  # Box standard (Decision #16): a final release vX.Y.Z goes live through hosh-deploy on the hosh.it box,
+  # which verifies it and rolls back by itself. No-op (notice) while HOSH_DEPLOY_KEY is not set.
+  deploy:
+    needs: release
+    if: >-
+      github.ref_type == 'tag' && needs.release.outputs.latest == 'true' &&
+      vars.HOSH_AUTODEPLOY != 'false'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ needs.release.outputs.primary }}
+    secrets: inherit

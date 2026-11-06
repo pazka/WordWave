@@ -62,6 +62,23 @@ def login():
     return 'OK'
 
 
+@app.route('/healthz', methods=['GET'])
+def healthz():
+    """Capability, not liveness: the word log is open in a writable directory and the web builds
+    are there. No secret, no path. 503 + status "error" otherwise (image/compose healthcheck)."""
+    checks = {}
+    try:
+        log = word_processor._log_file
+        checks["word_log"] = not log.closed and os.access(os.path.dirname(os.path.abspath(log.name)), os.W_OK)
+        checks["web_builds"] = all(os.path.isfile(os.path.join(app.static_folder, f))
+                                   for f in ("data.html", "admin.html"))
+        words = len(word_processor.current_words)
+    except Exception:
+        return {"status": "error"}, 503
+    ok = all(checks.values())
+    return {"status": "ok" if ok else "error", "checks": checks, "words": words}, 200 if ok else 503
+
+
 @app.route('/words/current/recorded', methods=['GET'])
 @wrap_error()
 def get_recorded():

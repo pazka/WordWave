@@ -1,0 +1,22 @@
+# Rendered by hosh-deploy on the first deploy (copied at `register`) into
+# /root/hosh-deploy/edge/traefik/dynamic/wordwave.yml. @@TOKENS@@ are filled on the box.
+# hosh.it box standard: edge Traefik (host network, file provider) → loopback port of the container.
+# REVERT = delete this file (Traefik hot-reloads the directory).
+http:
+  routers:
+    wordwave:
+      rule: "Host(`@@HOST@@`)"
+      service: wordwave
+      entryPoints: [@@ENTRYPOINT@@]
+      middlewares: [wordwave-hsts]
+      tls: @@TLS@@
+  middlewares:
+    wordwave-hsts:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+  services:
+    wordwave:
+      loadBalancer:
+        servers:
+          - url: "http://@@BIND@@"
