@@ -9,7 +9,8 @@ admin) copied into `static/` of a Python Flask + Socket.IO server (`COMServer/`,
 
 ## Maintenance (autonomous agent)
 Goal: keep base images, dependencies and Actions current **without changing behaviour**.
-- **Gate = `ci` green**: `server tests (python 3.11|3.14)`, `front builds (node 20|26)`, `container smoke`.
+- **Gate = `ci` green**: `server tests (python 3.11|3.14)`, `front builds (node 26)`, `container smoke` (incl. the Node
+  version guardrail `scripts/check-node-version.sh` on the build stages).
 - **Branches**: work on `agent/<topic>` (CI runs without a PR). Never push to `main`: `deploy.yml` and
   `release.yml` publish images from `main`/tags. Never tag. **The owner merges.**
 - **Dependabot PRs**: green → summarise the risk in a PR comment. Red → reproduce per TESTING.md, fix with

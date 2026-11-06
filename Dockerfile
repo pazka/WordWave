@@ -1,7 +1,7 @@
 # ---- build stage: WordWaveWeb (three.js word cloud, webpack.prod.js) ----
 # Mirrors gulp buildFront + renameFrontIndex: dist/index.html is also
 # published as data.html (the URL the installation loads on the live site).
-FROM node:26-alpine AS wordwave-web
+FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS wordwave-web
 WORKDIR /front
 COPY WordWaveWeb/package.json WordWaveWeb/package-lock.json ./
 RUN npm ci
@@ -13,7 +13,7 @@ RUN npm run build && cp dist/index.html dist/data.html
 # published as admin.html. Until react-scripts 5.0.1 (2026-10) this reproduced the exact
 # live bundles (main.4b672ae3.js / main.62b37043.css); the rendered admin UI is unchanged
 # (see TESTING.md) and scripts/check-admin-bundle.sh guards its features.
-FROM node:26-alpine AS admin-web
+FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS admin-web
 WORKDIR /admin
 COPY Speech2TextWeb/package.json Speech2TextWeb/package-lock.json ./
 RUN npm ci
