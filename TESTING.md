@@ -45,7 +45,7 @@ the daily security routine). Node only exists in the two front build stages (the
 wordwave-web` / `--target admin-web` and check them, before anything is pushed. `container smoke` also
 asserts that the runtime image has no `node` (if it ever does, check the runtime image too) and that
 the guard rejects `node:24.21.0-alpine` (the test of the test). Node base images are pinned
-`node:26.13.0-alpine@sha256:…` (Dependabot `docker` bumps tag and digest together).
+`node:26.13.1-alpine@sha256:…` (Dependabot `docker` bumps tag and digest together).
 
 ## What is covered
 
