@@ -90,6 +90,8 @@ any check fails. **Until `HOSH_DEPLOY_KEY` exists the job only prints a notice**
 push `:vX.Y.Z`, `:<sha>` and `:latest` as before (legacy box). Prerelease tags (`v1.4.0-rc.1`) never move
 `:latest` and never deploy.
 
+- Release: push the tag `vX.Y.Z`, or Actions → **release** on `main` with `version=vX.Y.Z` (creates the
+  tag and the GitHub release on the commit it built and scanned; fails if the tag exists on another commit).
 - Redeploy / roll back: Actions → **deploy** → `vX.Y.Z`, `rollback` or `status`; on the box
   `sudo hosh-deploy deploy|rollback|status wordwave …` (no sudo window needed). Log: `/var/log/hosh-deploy.log`.
 - Repo variable `HOSH_AUTODEPLOY=false` stops auto-deploy after releases.

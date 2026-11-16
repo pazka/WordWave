@@ -8,8 +8,15 @@ name: release
 #   - push to main (default branch) -> runs ONLY if repo variable DEPLOY_TRIGGER == 'main'
 #                                           (opt-in; unset = tag-only releases, the job is skipped).
 #                                           Pushes :main-<shortsha>, :<full sha> and :latest.
-#   - workflow_dispatch                  -> always runs. From a tag ref it behaves like a tag push;
+#   - workflow_dispatch with "version"   -> only from main; exactly like a push of tag <version>
+#                                           (vX.Y.Z or vX.Y.Z-pre). The
+#                                           tag is created on the dispatched commit (the one built and scanned)
+#                                           together with the GitHub release. Fails before any push if that
+#                                           tag already exists on another commit. Lets an agent release
+#                                           without git-pushing a tag (pazka/hosh-management#6).
+#     workflow_dispatch without version  -> always runs. From a tag ref it behaves like a tag push;
 #                                           from a branch ref it behaves like branch mode (:latest!).
+#   Version-shaped tags (vX.Y.Z, vX.Y.Z-pre) also get a GitHub release (skipped if it exists).
 #
 # Knobs (Settings -> Secrets and variables -> Actions)
 #   vars.DEPLOY_TRIGGER   'main' = every push to main releases :latest. Unset (default) = tags only.
@@ -29,6 +36,10 @@ on:
     tags: ['v*']
     branches: [main]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to create, e.g. v1.2.0 (empty = release the dispatched ref)"
+        required: false
 permissions:
   contents: read
   packages: write
@@ -42,9 +53,13 @@ jobs:
     # Tag pushes and manual runs always go; branch pushes only when DEPLOY_TRIGGER == 'main'.
     if: github.event_name != 'push' || github.ref_type == 'tag' || vars.DEPLOY_TRIGGER == 'main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # GitHub release (and its tag on a dispatch with a version)
+      packages: write
     outputs:
       primary: ${{ steps.meta.outputs.primary }}
       latest: ${{ steps.meta.outputs.latest }}
+      deploy: ${{ steps.meta.outputs.deploy }}
     steps:
       - uses: actions/checkout@v7
       - name: compute release tags
@@ -53,8 +68,31 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
+          # A dispatch with a version is treated exactly like a push of that tag.
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            # Only the default branch can be released this way: it is the only one that went through the QA gate.
+            if [ "${GITHUB_REF:-}" != "refs/heads/main" ]; then
+              echo "::error::a release with a version must be dispatched from main (got ${GITHUB_REF:-nothing}). Nothing was released."
+              exit 1
+            fi
+            # whole-string match (a line-based grep would accept a multi-line value)
+            if ! [[ "$INPUT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::version must be vX.Y.Z or vX.Y.Z-pre"
+              exit 1
+            fi
+            # Never release twice: an existing tag must point at the dispatched commit (checked before any push).
+            tagged="$(git ls-remote --tags origin | awk -v t="refs/tags/$INPUT_VERSION" \
+              '$2 == t "^{}" { p = $1 } $2 == t { c = $1 } END { print (p != "" ? p : c) }')"
+            if [ -n "$tagged" ] && [ "$tagged" != "$SHA" ]; then
+              echo "::error::tag $INPUT_VERSION already exists on $tagged, not on the dispatched commit $SHA. Nothing was released."
+              exit 1
+            fi
+            REF_TYPE=tag
+            REF_NAME="$INPUT_VERSION"
+          fi
           if [ "$REF_TYPE" = "tag" ]; then
             if ! printf '%s' "$REF_NAME" | grep -Eq '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$'; then
               echo "::error::git tag '$REF_NAME' is not a valid docker tag"
@@ -71,6 +109,14 @@ jobs:
           fi
           echo "primary=$primary" >> "$GITHUB_OUTPUT"
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$REF_TYPE" = "tag" ] && printf '%s' "$REF_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+          # hosh-deploy: release tags without '-' only (was: github.ref_type == 'tag', which misses a dispatch)
+          if [ "$REF_TYPE" = "tag" ] && [ "$latest" = "true" ]; then deploy=true; else deploy=false; fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
           echo "release tags: :$primary :$SHA (latest=$latest)"
       - uses: docker/setup-buildx-action@v4
       - uses: docker/login-action@v4
@@ -124,6 +170,24 @@ jobs:
           else
             echo "::notice::prerelease tag $PRIMARY -> :latest left untouched"
           fi
+      - name: GitHub release
+        if: steps.meta.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.primary }}
+          LATEST: ${{ steps.meta.outputs.latest }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "GitHub release $TAG exists"; exit 0; fi
+          notes="Image: ${IMAGE}:${TAG}. Deployment: see DEPLOY.md."
+          pre=""; [ "$LATEST" = true ] || pre=--prerelease
+          if [ -z "${INPUT_VERSION:-}" ]; then
+            gh release create "$TAG" --title "${GITHUB_REPOSITORY#*/} $TAG" --notes "$notes" --verify-tag $pre
+          else
+            # creates the tag on the exact commit that was built, scanned and pushed
+            gh release create "$TAG" --title "${GITHUB_REPOSITORY#*/} $TAG" --notes "$notes" --target "$GITHUB_SHA" $pre
+          fi
       - name: trigger Dokploy deploy
         if: steps.meta.outputs.latest == 'true'
         env:
@@ -140,9 +204,7 @@ jobs:
   # which verifies it and rolls back by itself. No-op (notice) while HOSH_DEPLOY_KEY is not set.
   deploy:
     needs: release
-    if: >-
-      github.ref_type == 'tag' && needs.release.outputs.latest == 'true' &&
-      vars.HOSH_AUTODEPLOY != 'false'
+    if: needs.release.outputs.deploy == 'true' && vars.HOSH_AUTODEPLOY != 'false'
     uses: ./.github/workflows/deploy.yml
     with:
       version: ${{ needs.release.outputs.primary }}
