@@ -35,7 +35,7 @@ bash scripts/smoke.sh wordwave:next
 ## CI (`.github/workflows/ci.yml`)
 
 PRs, `main`, `agent/**`. Jobs: `server tests (python 3.11)` (gate) and `(python 3.14)` (early warning,
-non-blocking); `front builds (node 26)`; `container smoke` (builds the real Dockerfile, runs
+non-blocking); `front builds (node 26)`; `visual regression` (section "Visual use cases"); `container smoke` (builds the real Dockerfile, runs
 `scripts/smoke.sh`). A Dependabot PR that bumps a base image builds that base in `container smoke`.
 
 **Node guardrail** (pazka/hosh-management#5, CVE-2026-111497): `scripts/check-node-version.sh IMAGE`
@@ -84,6 +84,66 @@ volume kept) and the log read back. Both modes also check `/healthz` and the ima
 (login form fields/route/Basic auth, manual text + exclude-word sending, reset/reload of the visuals,
 speech-recognition controls, downloads, `/info`), by visible text, field names and REST routes. Runs in
 the CI `front builds` job (on `Speech2TextWeb/build`) and in the smoke. Passes on the pre-upgrade bundle.
+
+## Visual use cases (visual regression, hosh-management AGENTS.md §3)
+
+`visual/run.sh IMAGE` (CI job `visual regression`): the built image runs as `docker-compose.example.yml` does
+(uid 10001, read-only rootfs, tmpfs /tmp, cap_drop ALL, no-new-privileges, pids 128, mem 512m, `PORT=8000`,
+`DATA_DIR=/data` on a fresh volume) with **throwaway** admin credentials (`visual-user` / `visual-pass-not-secret`).
+Two headless Chromes of the runner (mouse for 1400 / 1024, touch + mobile viewport for 390) open the pages at
+their **production URL** `https://wordwave.hosh.it/…`: both fronts choose their server from the page host
+(`env.ts` / `env.js`: `localhost` → the DEV server, anything else → `https://wordwave.hosh.it/`) and the image
+only accepts the production origins (Socket.IO + REST CORS), so the harness does not change either. Every request
+to that origin is paused in Chrome (DevTools `Fetch` domain) and answered by the container (`visual/cdp.mjs`);
+every other host resolves to nothing, so nothing leaves the runner (the Socket.IO websocket upgrade fails and the
+client stays on long polling, through the same proxy). `visual/shoot.mjs` runs with Node of the Dockerfile's own
+pinned `node:…@sha256` image (the runtime image has no Node), Node built-ins only. Before **every** shot the word
+state is set through the REST API (`DELETE /words`, then `POST /words` with the fixed French text of
+`visual/cases.mjs` `SEED`: 20 distinct words, counts 1 to 6), so the shots do not depend on their order.
+
+Determinism: the visualisation is **not** a WebGL canvas (three.js never reaches `bundle.js`; `#three-canvas`
+stays empty). Every word is a `<p>` placed on every frame from `Math.random()` and `Date.now()`. A script run
+before the page's own (`FREEZE_JS`) fixes `Date.now()` (2026-01-01) and replaces `Math.random()` by a seeded PRNG,
+re-seeded each time a word payload is parsed (`/words/current`, Socket.IO `new_text`), so each word gets the same
+place on every run; the 1 s `transition` of the words and all animations are switched off before the shot.
+Checked: two full runs on the same Chrome are pixel-identical, and a font change of the words fails the shots.
+Each case is compared with `visual/baseline/<id>-<width>.png` (tolerance: channel 24, 0.1 % of the pixels; any
+page exception, `alert()`/`confirm()` or server traceback fails the run). Shots, diffs, `report.json` (with the
+proxied requests of every shot) and the server log are the artifact `visual-<sha>`.
+
+| id | page / state | steps |
+|---|---|---|
+| V1-cloud-empty | `/data.html`, no word yet: black page, no word | `DELETE /words`, open |
+| V2-cloud-words | `/data.html`, the 20 seeded words, size and grey by count (`voix` 6 = biggest, white) | seed, open |
+| V3-cloud-light | `/data.html?light`: white background, black words | seed, open |
+| V4-cloud-min3 | `/data.html?min=3`: only the 5 words said 3 times or more | seed, open |
+| V5-cloud-live-update | `/data.html` open while the admin posts `LIVE` ("Un oiseau passe au-dessus de la mer, un oiseau blanc."): `oiseau`, `passe`, `blanc` arrive by Socket.IO `new_text` (23 words) | seed, open, wait for the Socket.IO connect, `POST /words` |
+| V6-cloud-after-reset | `/data.html` open while the admin resets (`DELETE /words` = "Reset visual"): Socket.IO `reset`, the page reloads `/words/current` and hides every word | seed, open, wait for the Socket.IO connect, `DELETE /words` |
+| A1-admin-logged-out | `/admin.html`: server info (`WordWave COM Server V… on env production`), login form, "Words Download" buttons | open |
+| A2-admin-wrong-password | `/admin.html`, login with a wrong password: `/login` answers 401, the form stays filled (no message) | type login + wrong password, click Login |
+| A3-admin-logged-in | `/admin.html` logged in: "Logged in !", Client visuals, Speech Recognition Control (switches, slider, language), Manual Text Input, Additional Exclude Word, Speech/Server Result | type login + password, click Login |
+| A4-admin-text-sent | A3, then `LIVE` typed in Manual Text Input and "Submit Manuel Text": the box is emptied, "Server Result" shows ` oiseau passe mer oiseau blanc` | A3 + type, click Submit |
+| A5-admin-language-menu | A3, then the language select opened: France / United Kingdom / United States (default from the browser language, en-US) | A3 + open the select |
+| A6-index-logged-out | `/index.html`: the same admin app (CRA index wins at `/index.html`) | open |
+| X1-root-404 | `/` (the bare host): Flask's "404 Not Found" page | open |
+
+All 13 cases at 1400, 1024 and 390 px = 39 shots. On the phone width the visualisation is shot as a phone shows
+it: its viewport meta (`width=device-width*2, initial-scale=0.1`) zooms the page out, so the 390 px shot is the
+whole zoomed-out layout (1560 x 3600), not a 390 px column.
+
+Not covered: the speech recognition itself (microphone; "Start Listening" turns the panel red), the six
+downloads (files, not pages), "Reload visualizer in all clients" (a page reload of the visualisations),
+the confirm dialog of "Reset visual" (the harness fails on any dialog; V6 does the reset through the API), the
+"Additional Exclude Word" result (no visible change in the admin), `/swagger/` (third-party UI), the Unity client.
+
+Current behaviour pinned by the shots, not changed (a fix is a separate, owner-approved change): a wrong password gives no message (A2); in `?light` the most said words are almost invisible (V3: the inline grey-to-white colour of `app.ts` wins over `body.light p { color: black }`, so `voix`/`mer` are white on white);
+the admin calls `https://wordwave.hosh.it//login` (double slash, accepted by Werkzeug); `/` is a bare 404 (X1).
+
+New baselines (only in a PR that says the visual change is wanted): CI prints every failing shot in the job log
+(`VISUAL-PNG` lines); `node visual/from-log.mjs <log> visual/baseline --chrome` writes them back (sha256
+checked), or take them from the artifact; look at every picture before committing. A new runner Chrome may move
+anti-aliasing: `report.json` and the log say when the baselines were made with another Chrome
+(`visual/baseline/chrome.txt`).
 
 ## Changes and upgrades (2026-10-19)
 
