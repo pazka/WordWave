@@ -49,6 +49,9 @@ COPY --from=admin-web /admin/build/ ./static/
 # /data owned by 10001: a new named volume mounted there inherits it (unused by the legacy compose).
 RUN mkdir -p /data && chown 10001:10001 /data
 ENV PORT=80
+# The `version` field of every log line (release.yml passes the release tag; a local build says "dev").
+ARG VERSION=dev
+ENV APP_VERSION=${VERSION}
 
 EXPOSE 80
 

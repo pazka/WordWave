@@ -3,6 +3,7 @@ import traceback
 from flask import Response
 
 from config import get_config
+from jsonlog import LOG, err_field, request_fields
 
 
 class CustomException(Exception):
@@ -19,6 +20,15 @@ class ClientError(CustomException):
 
 class ServerError(CustomException):
     pass
+
+
+def _hidden():
+    try:
+        from flask import current_app
+        hide = current_app.extensions.get("hosh_log_hide")
+        return hide() if hide else ()
+    except RuntimeError:  # outside a request
+        return ()
 
 
 def get_trace(e):
@@ -62,11 +72,10 @@ def wrap_error(message=""):
                     'server_message': message
                 }
 
-            print('\033[93m')
-            print("An error was intercepted : ")
-
-            print(err)
-            print(trace)
+            # The client still gets the error body above, with status 200 (a known quirk, see TESTING.md); the
+            # log gets one standard line, without the request body or a credential.
+            LOG.error("route_error", "error intercepted, error body returned", **request_fields(status=200),
+                      err=err_field(err, _hidden()))
             return res
 
         wrapped.__name__ = f.__name__

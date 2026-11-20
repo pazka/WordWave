@@ -129,6 +129,8 @@ jobs:
           context: .
           load: true
           tags: ghcr.io/pazka/wordwave:candidate
+          # the `version` field of every log line (Dockerfile ARG VERSION)
+          build-args: VERSION=${{ steps.meta.outputs.primary }}
       # Node guardrail (pazka/hosh-management#5): an image built on an unpatched/EOL Node is never
       # pushed. Node only exists in the front build stages (runtime = python), so check those.
       - name: Node guardrail on the build stages

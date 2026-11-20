@@ -1,5 +1,6 @@
 import os
 
+import flask.cli
 from flask import Flask, request
 from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
@@ -8,6 +9,7 @@ from SocketCom import SocketCom
 from WordProcessor import WordProcessor
 from config import get_config
 from error_wrapper import wrap_error
+import jsonlog
 
 users = {}
 
@@ -35,18 +37,45 @@ def init(_word_processor: WordProcessor):
     app.config['PORT'] = get_config('port')
     app.config['ENV'] = 'development' if get_config('debug') else 'production'
     cors = CORS(app, resources=get_config('flask_cors'))
+    jsonlog.install(app, hide=lambda: [str(get_config('login')), str(get_config('mdp')), str(get_config('secret'))])
 
     SocketCom = SocketCom(app)
 
 
 def run():
+    # One startup line BEFORE the blocking run (the old print came after it, so it never showed).
+    jsonlog.LOG.info("startup", f"REST/SOCKET listening to port : {get_config('port')}", **startup_fields())
+    # stdout holds only JSON lines: Flask's " * Serving Flask app" banner is not printed.
+    flask.cli.show_server_banner = lambda *args, **kwargs: None
     if get_config('debug'):
         SocketCom.io.run(app=app, port=get_config('port'))
     else:
         # Same Werkzeug server as before; Flask-SocketIO >= 5.3 only requires the explicit opt-in.
         SocketCom.io.run(app=app, host="0.0.0.0", port=get_config('port'), allow_unsafe_werkzeug=True)
 
-    print(f'REST/SOCKET listening to port : {get_config("port")}')
+
+def capability():
+    """The checks of /healthz: the word log is open in a writable directory, the web builds are there."""
+    log = word_processor._log_file
+    return {
+        "word_log": not log.closed and os.access(os.path.dirname(os.path.abspath(log.name)), os.W_OK),
+        "web_builds": all(os.path.isfile(os.path.join(app.static_folder, f)) for f in ("data.html", "admin.html")),
+    }
+
+
+def startup_fields():
+    """Port, capability, level and the NAMES of the configuration that is set (never a value or a path)."""
+    try:
+        port = int(get_config('port'))
+    except (TypeError, ValueError):
+        port = None
+    try:
+        checks = capability()
+    except Exception:
+        checks = {"word_log": False, "web_builds": False}
+    data_dir = os.environ.get("DATA_DIR") or curr_path
+    return {"port": port, "data_dir_writable": os.access(data_dir, os.W_OK), **checks,
+            "log_level": jsonlog.LOG.level, "config": jsonlog.config_names_set()}
 
 
 @auth.verify_password
@@ -66,12 +95,8 @@ def login():
 def healthz():
     """Capability, not liveness: the word log is open in a writable directory and the web builds
     are there. No secret, no path. 503 + status "error" otherwise (image/compose healthcheck)."""
-    checks = {}
     try:
-        log = word_processor._log_file
-        checks["word_log"] = not log.closed and os.access(os.path.dirname(os.path.abspath(log.name)), os.W_OK)
-        checks["web_builds"] = all(os.path.isfile(os.path.join(app.static_folder, f))
-                                   for f in ("data.html", "admin.html"))
+        checks = capability()
         words = len(word_processor.current_words)
     except Exception:
         return {"status": "error"}, 503
