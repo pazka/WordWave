@@ -85,7 +85,7 @@ volume kept) and the log read back. Both modes also check `/healthz` and the ima
 speech-recognition controls, downloads, `/info`), by visible text, field names and REST routes. Runs in
 the CI `front builds` job (on `Speech2TextWeb/build`) and in the smoke. Passes on the pre-upgrade bundle.
 
-## Logs (`COMServer/tests/test_log.py`, 11 tests; hosh-management AGENTS.md §11)
+## Logs (`COMServer/tests/test_log.py`, 12 tests; hosh-management AGENTS.md §11)
 
 `COMServer/jsonlog.py` (standard library only) writes one JSON object per line on stdout: `ts` (UTC, ms), `level`,
 `service` (`wordwave`), `version` (`APP_VERSION`, set from the release tag by `release.yml` through the Dockerfile
@@ -105,17 +105,23 @@ the level, default `info`. At info the server writes only:
   word "Traceback") with the credentials and the request body replaced by `<hidden>`. It replaces the ANSI
   coloured `print` of the traceback.
 
-Werkzeug's access log (IP + raw path on stderr) and Flask's banner and exception print are off. Never logged: the
+- `socket_refused` (warn) when engine.io refuses a Socket.IO client of another site (its Origin is not in
+  `socket_cors`), without the Origin itself; other engine.io / Socket.IO / Werkzeug errors are `socket_error` /
+  `server_error` lines with `err`, never the library's own text.
+
+Werkzeug's access log (IP + raw path on stderr), engine.io's own stderr handler and Flask's banner and exception
+print are off. Never logged: the
 words people send, credentials, IPs, raw paths or query strings.
 
 Tests: the line format, level filtering and `LOG_LEVEL`/`APP_LOG_LEVEL`, config names without values, `err`
 (hidden words, frames), request ids; the request-line rules on a small Flask app (a 500 with `err` and no path,
 query, body or secret; auth 4xx and slow at warn; healthz, 404 and the rest silent at info, by route at debug);
-the real `app.py` with the production config shape in a subprocess: the startup line (`assertEqual` on its keys
-and values), a wrong password (401, one `auth_failed` line), a non-UTF-8 word post caught by `wrap_errors` (same
-error body for the client, one `route_error` line), a word post and the open data silent, `X-Request-Id` echoed or
+library records as JSON lines without their text; the real `app.py` with the production config shape in a
+subprocess: the startup line (`assertEqual` on its keys and values), a wrong password (401, one `auth_failed`
+line), a non-UTF-8 word post caught by `wrap_errors` (same error body for the client, one `route_error` line), a
+Socket.IO handshake from another site's Origin (400 as before, one `socket_refused` line), a word post and the open data silent, `X-Request-Id` echoed or
 generated, SIGTERM and SIGINT each writing one `shutdown` line and exiting 0, every stdout line a standard JSON
-line, no credential, posted word, query, address, path or ANSI colour in stdout, no access log on stderr.
+line, no credential, posted word, query, address, Origin, path or ANSI colour in stdout, stderr empty.
 `scripts/smoke.sh` checks the built image the same way (stdout only JSON lines, one startup line with
 `word_log`/`web_builds` true, no error line, nothing on stderr, no credential, posted word or address).
 

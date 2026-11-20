@@ -106,30 +106,47 @@ def request_id(incoming):
 
 
 class _JsonHandler(logging.Handler):
-    """Werkzeug's own errors (its server, outside a request of the app) as standard error lines, without the
-    message text (it can hold a raw path or an address)."""
+    """The libraries' own log records (Werkzeug's server, engine.io / Socket.IO) as standard lines, WITHOUT their
+    message text: it can hold a raw path, an address or a client's Origin header."""
 
-    def __init__(self, logger):
+    def __init__(self, logger, event, msg):
         super().__init__(level=logging.ERROR)
-        self.logger = logger
+        self.logger, self.event, self.msg = logger, event, msg
 
     def emit(self, record):
+        try:
+            text = record.getMessage()
+        except Exception:
+            text = ""
+        if "not an accepted origin" in text:     # engine.io refusing a Socket.IO client of another site
+            self.logger.warn("socket_refused", "origin not accepted")
+            return
         fields = {}
         if record.exc_info and record.exc_info[1] is not None:
             fields["err"] = err_field(record.exc_info[1])
-        self.logger.error("server_error", "web server error", **fields)
+        self.logger.error(self.event, self.msg, **fields)
+
+
+def _route_library_logs(logger):
+    """Werkzeug, engine.io and Socket.IO keep their levels (errors only), but write standard JSON lines on stdout
+    instead of their own text on stderr. Done before the SocketIO server is created: engine.io only adds its own
+    stderr handler to a logger whose level is not set yet."""
+    for name, event, msg in (("werkzeug", "server_error", "web server error"),
+                             ("engineio.server", "socket_error", "socket server error"),
+                             ("socketio.server", "socket_error", "socket server error")):
+        lib = logging.getLogger(name)
+        lib.setLevel(logging.ERROR)
+        lib.handlers = [_JsonHandler(logger, event, msg)]
+        lib.propagate = False
 
 
 def install(app, logger=None, hide=lambda: ()):
     """Request ids and the request lines on a Flask app; silences Werkzeug's access log and Flask's own
-    exception print (they are replaced by the request_failed line). `hide` gives the strings to hide in errors."""
+    exception print (they are replaced by the request_failed line); library errors as JSON lines. `hide` gives the strings to hide in errors."""
     from flask import g, got_request_exception, request
 
     logger = logger or LOG
-    werkzeug = logging.getLogger("werkzeug")
-    werkzeug.setLevel(logging.ERROR)
-    werkzeug.handlers = [_JsonHandler(logger)]
-    werkzeug.propagate = False
+    _route_library_logs(logger)
     app.logger.handlers = [logging.NullHandler()]
     app.logger.propagate = False
 

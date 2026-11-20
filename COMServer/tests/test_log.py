@@ -162,6 +162,22 @@ class RequestLinesTest(unittest.TestCase):
                          [("debug", "healthz", "/healthz"), ("debug", "request", "<unmatched>")])
         self.assertNotIn("x=1", self.out.getvalue())
 
+    def test_library_logs_are_json_lines_without_their_text(self):
+        import logging
+        logging.getLogger("engineio.server").error("%s is not an accepted origin.", "https://evil.example")
+        logging.getLogger("engineio.server").info("%s is not an accepted origin.", "https://evil.example")
+        try:
+            raise OSError("socket broke at /private/path")
+        except OSError:
+            logging.getLogger("werkzeug").exception("Error on request %s", "GET /secret-path?q=1")
+        logging.getLogger("werkzeug").info('127.0.0.1 - - "GET /secret-path HTTP/1.1" 200 -')
+        rows = self.rows()
+        self.assertEqual([(r["level"], r["event"]) for r in rows], [("warn", "socket_refused"), ("error", "server_error")])
+        self.assertEqual(rows[1]["err"]["type"], "OSError")
+        text = self.out.getvalue()
+        for s in ("evil.example", "secret-path", "127.0.0.1"):
+            self.assertNotIn(s, text)
+
     def test_request_id_generated_when_missing_or_unsafe(self):
         for headers in ({}, {"X-Request-Id": "bad id with spaces"}):
             r = self.client.get("/healthz", headers=headers)
@@ -272,6 +288,11 @@ class RealServerTest(unittest.TestCase):
         self.assertEqual(set(json.loads(body)), {"error", "trace", "server_message"})
         self.assertIn("UnicodeDecodeError", json.loads(body)["error"])
 
+        # a Socket.IO client of another site: refused (400) as before, one socket_refused warn line, nothing on
+        # stderr and not the Origin header itself
+        status, _, _ = self.call("GET", "/socket.io/?EIO=4&transport=polling", headers={"Origin": "https://evil.example"})
+        self.assertEqual(status, 400)
+
         # an ordinary word post and the open data: nothing at info
         status, headers, body = self.call("POST", "/words", body="Bonjour les chats".encode(), auth=good)
         self.assertEqual(status, 200)
@@ -281,7 +302,8 @@ class RealServerTest(unittest.TestCase):
         time.sleep(0.2)
 
         rows = self.rows()
-        self.assertEqual([r["event"] for r in rows], ["startup", "auth_failed", "route_error"], self.stdout())
+        self.assertEqual([r["event"] for r in rows], ["startup", "auth_failed", "route_error", "socket_refused"], self.stdout())
+        self.assertEqual(rows[3]["level"], "warn")
         a = rows[1]
         self.assertEqual(list(a), HEAD + ["req_id", "method", "route", "status", "dur_ms"])
         self.assertEqual([a["level"], a["req_id"], a["method"], a["route"], a["status"]],
@@ -301,13 +323,14 @@ class RealServerTest(unittest.TestCase):
 
         out = self.stdout()
         for s in (self.MDP, self.SECRET, "wrong-pass", "Bonjour", "private-words", "private-query", "127.0.0.1",
-                  self.data, "Traceback", "\033["):
+                  self.data, "Traceback", "\033[", "evil.example"):
             self.assertNotIn(s, out, s)
         for line in out.splitlines():
             self.assertEqual(list(json.loads(line))[:6], HEAD, line)
         self.assertNotIn("Traceback", self.stderr())
         self.assertNotIn("127.0.0.1", self.stderr())     # no Werkzeug access log
         self.assertNotIn("POST /", self.stderr())
+        self.assertEqual(self.stderr(), "")
 
     def test_sigint_and_debug_level(self):
         self.start({"APP_LOG_LEVEL": "debug"})
