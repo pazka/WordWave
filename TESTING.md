@@ -85,7 +85,7 @@ volume kept) and the log read back. Both modes also check `/healthz` and the ima
 speech-recognition controls, downloads, `/info`), by visible text, field names and REST routes. Runs in
 the CI `front builds` job (on `Speech2TextWeb/build`) and in the smoke. Passes on the pre-upgrade bundle.
 
-## Logs (`COMServer/tests/test_log.py`, 12 tests; hosh-management AGENTS.md §11)
+## Logs (`COMServer/tests/test_log.py`, 15 tests, plus one in `test_server.py`; hosh-management AGENTS.md §11)
 
 `COMServer/jsonlog.py` (standard library only) writes one JSON object per line on stdout: `ts` (UTC, ms), `level`,
 `service` (`wordwave`), `version` (`APP_VERSION`, set from the release tag by `release.yml` through the Dockerfile
@@ -101,7 +101,8 @@ the level, default `info`. At info the server writes only:
   characters, generated otherwise, returned in the answer), `method`, `route` (the Flask rule, never the raw
   path or query), `status`, `dur_ms`;
 - `route_error` (error) for an exception caught by `wrap_errors`: the client still gets the same error body as
-  before (known quirk below), the log gets `req_id`, `method`, `route` and `err` (type, message, stack frames, no
+  before, with 200 (known quirk below), the log gets `req_id`, `method`, `route`, `status` (200, what the client
+  gets), `dur_ms` and `err` (type, message, stack frames, no
   word "Traceback") with the credentials and the request body replaced by `<hidden>`. It replaces the ANSI
   coloured `print` of the traceback.
 
@@ -113,9 +114,13 @@ Werkzeug's access log (IP + raw path on stderr), engine.io's own stderr handler 
 print are off. Never logged: the
 words people send, credentials, IPs, raw paths or query strings.
 
-Tests: the line format, level filtering and `LOG_LEVEL`/`APP_LOG_LEVEL`, config names without values, `err`
-(hidden words, frames), request ids; the request-line rules on a small Flask app (a 500 with `err` and no path,
-query, body or secret; auth 4xx and slow at warn; healthz, 404 and the rest silent at info, by route at debug);
+Tests: the line format, level filtering and `LOG_LEVEL`/`APP_LOG_LEVEL`, `ts` in UTC under `TZ=Asia/Tokyo`, config
+names without values, `err` (hidden words, frames), request ids; the request-line rules on a small Flask app (a 500
+with `err` and no path, query, body or secret, nothing on stderr or `wsgi.errors`; a 500 whose message carries the
+posted body; a `wrap_error` route whose message carries a secret and the body: `route_error` with `status` 200,
+`dur_ms` and both `<hidden>`; auth 4xx and slow at warn; healthz, 404 and the rest silent at info, by route at debug);
+the real `ServerCom` app (`test_server.py`): a `route_error` on `POST /words` whose message carries the configured
+login, password, session secret and the posted words logs each one as `<hidden>`;
 library records as JSON lines without their text; the real `app.py` with the production config shape in a
 subprocess: the startup line (`assertEqual` on its keys and values), a wrong password (401, one `auth_failed`
 line), a non-UTF-8 word post caught by `wrap_errors` (same error body for the client, one `route_error` line), a

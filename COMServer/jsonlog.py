@@ -195,10 +195,16 @@ def install(app, logger=None, hide=lambda: ()):
     return logger
 
 
-def request_fields():
-    """req_id, method and route of the current request (for lines written inside a request)."""
+def request_fields(status=None):
+    """req_id, method and route of the current request (for lines written inside a request), then `status` (the
+    status the client gets) and `dur_ms` so far when a status is given."""
     from flask import g, has_request_context, request
     if not has_request_context():
         return {}
-    return {"req_id": g.get("log_req_id") or "", "method": request.method,
-            "route": request.url_rule.rule if request.url_rule is not None else "<unmatched>"}
+    fields = {"req_id": g.get("log_req_id") or "", "method": request.method,
+              "route": request.url_rule.rule if request.url_rule is not None else "<unmatched>"}
+    if status is not None:
+        t0 = g.get("log_t0")
+        fields["status"] = status
+        fields["dur_ms"] = round((time.monotonic() - t0) * 1000, 1) if t0 is not None else 0
+    return fields

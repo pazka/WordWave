@@ -72,9 +72,9 @@ def wrap_error(message=""):
                     'server_message': message
                 }
 
-            # The client still gets the error body above (a known quirk, see TESTING.md); the log gets one
-            # standard line, without the request body or a credential.
-            LOG.error("route_error", "error intercepted, error body returned", **request_fields(),
+            # The client still gets the error body above, with status 200 (a known quirk, see TESTING.md); the
+            # log gets one standard line, without the request body or a credential.
+            LOG.error("route_error", "error intercepted, error body returned", **request_fields(status=200),
                       err=err_field(err, _hidden()))
             return res
 

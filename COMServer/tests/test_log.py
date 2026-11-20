@@ -5,6 +5,8 @@ production config shape): startup line, auth failure, an error caught by wrap_er
 shutdown line on SIGTERM / SIGINT. Run from COMServer/:  python -m unittest discover -s tests -v
 """
 import base64
+import contextlib
+import datetime
 import io
 import json
 import os
@@ -62,6 +64,26 @@ class LoggerTest(unittest.TestCase):
         self.assertEqual(jsonlog.level_from_env({"LOG_LEVEL": "loud"}), "info")
         self.assertEqual(jsonlog.Logger(stream=io.StringIO()).version, os.environ.get("APP_VERSION") or "dev")
 
+    def test_ts_is_utc_whatever_the_local_timezone(self):
+        if not hasattr(time, "tzset"):
+            self.skipTest("time.tzset is POSIX only")
+        old = os.environ.get("TZ")
+
+        def restore():
+            if old is None:
+                os.environ.pop("TZ", None)
+            else:
+                os.environ["TZ"] = old
+            time.tzset()
+        self.addCleanup(restore)
+        os.environ["TZ"] = "Asia/Tokyo"     # UTC+9, no daylight saving
+        time.tzset()
+        self.assertEqual(time.timezone, -9 * 3600)   # the zone is really in effect
+        ts = jsonlog.utc_ts()
+        self.assertRegex(ts, TS)
+        parsed = datetime.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=datetime.timezone.utc)
+        self.assertLess(abs(parsed.timestamp() - time.time()), 5)
+
     def test_config_names_never_values(self):
         env = {"PORT": "8000", "MDP": "pw-secret", "LOGIN": "", "secret": "s3", "OTHER": "x"}
         self.assertEqual(jsonlog.config_names_set(env), ["PORT", "MDP", "secret"])
@@ -92,8 +114,15 @@ class RequestLinesTest(unittest.TestCase):
     """jsonlog.install on a small Flask app: the rules of the request lines, with a 500 that has an err."""
 
     def setUp(self):
-        from flask import Flask
+        from flask import Flask, request
+        import error_wrapper
+        # wrap_error writes on jsonlog.LOG and reads wrap_errors from the config: point both at this test
+        self._log_stream, self._get_config = jsonlog.LOG.stream, error_wrapper.get_config
+        self.addCleanup(setattr, jsonlog.LOG, "stream", self._log_stream)
+        self.addCleanup(setattr, error_wrapper, "get_config", self._get_config)
+        error_wrapper.get_config = lambda name: True if name == "wrap_errors" else self._get_config(name)
         self.out = io.StringIO()
+        jsonlog.LOG.stream = self.out
         self.log = jsonlog.Logger(stream=self.out, level="info", version="v0")
         app = Flask("t")
         jsonlog.install(app, logger=self.log, hide=lambda: ["pw-secret"])
@@ -105,6 +134,16 @@ class RequestLinesTest(unittest.TestCase):
         @app.route("/login", methods=["POST"])
         def login():
             return "Unauthorized Access", 401
+
+        @app.route("/echo", methods=["POST"])
+        def echo():
+            # an exception whose message carries the posted body (as a parser error would)
+            raise ValueError("cannot parse " + request.get_data(as_text=True))
+
+        @app.route("/wrapped", methods=["POST"])
+        @error_wrapper.wrap_error()
+        def wrapped():
+            raise ValueError("pw-secret refused for " + request.get_data(as_text=True))
 
         @app.route("/slow")
         def slow():
@@ -125,8 +164,14 @@ class RequestLinesTest(unittest.TestCase):
         return lines_of(self.out.getvalue())
 
     def test_500_is_one_request_failed_line_with_err_without_path_body_or_secret(self):
-        r = self.client.get("/boom/private-name?q=secret-query", data="the body text", headers={"X-Request-Id": "rid-1"})
+        errors, stderr = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            r = self.client.get("/boom/private-name?q=secret-query", data="the body text",
+                                headers={"X-Request-Id": "rid-1"}, errors_stream=errors)
         self.assertEqual(r.status_code, 500)
+        # Flask's own "Exception on /boom/... [GET]" + raw Traceback print is silenced: nothing outside the JSON line
+        self.assertEqual(errors.getvalue(), "")
+        self.assertEqual(stderr.getvalue(), "")
         self.assertEqual(r.headers["X-Request-Id"], "rid-1")
         rows = self.rows()
         self.assertEqual(len(rows), 1, self.out.getvalue())
@@ -140,6 +185,33 @@ class RequestLinesTest(unittest.TestCase):
         text = json.dumps(e)
         for s in ("pw-secret", "secret-query", "the body text", "127.0.0.1"):
             self.assertNotIn(s, text)
+
+    def test_500_hides_the_posted_body_in_err(self):
+        r = self.client.post("/echo", data="Bonjour les chats prives", headers={"X-Request-Id": "rid-2"})
+        self.assertEqual(r.status_code, 500)
+        rows = self.rows()
+        self.assertEqual([(x["event"], x["route"], x["status"]) for x in rows], [("request_failed", "/echo", 500)])
+        self.assertEqual(rows[0]["err"]["message"], "cannot parse <hidden>")
+        self.assertIn("<hidden>", rows[0]["err"]["stack"])
+        self.assertNotIn("Bonjour", self.out.getvalue())
+
+    def test_route_error_hides_credentials_and_body_and_has_status_and_duration(self):
+        r = self.client.post("/wrapped", data="Bonjour les chats prives", headers={"X-Request-Id": "rid-3"})
+        # the client gets wrap_error's error body with 200, as before
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(set(r.get_json()), {"error", "trace", "server_message"})
+        rows = self.rows()
+        self.assertEqual(len(rows), 1, self.out.getvalue())
+        e = rows[0]
+        self.assertEqual(list(e), HEAD + ["req_id", "method", "route", "status", "dur_ms", "err"])
+        self.assertEqual([e["level"], e["event"], e["req_id"], e["method"], e["route"], e["status"]],
+                         ["error", "route_error", "rid-3", "POST", "/wrapped", 200])
+        self.assertIsInstance(e["dur_ms"], (int, float))
+        self.assertGreaterEqual(e["dur_ms"], 0)
+        self.assertEqual(e["err"]["message"], "<hidden> refused for <hidden>")
+        self.assertTrue(e["err"]["stack"].startswith("ValueError: <hidden> refused for <hidden>\n"))
+        for s in ("pw-secret", "Bonjour"):
+            self.assertNotIn(s, self.out.getvalue())
 
     def test_auth_4xx_warn_slow_warn_others_silent_at_info(self):
         self.client.post("/login", data="user:pass")
@@ -309,8 +381,10 @@ class RealServerTest(unittest.TestCase):
         self.assertEqual([a["level"], a["req_id"], a["method"], a["route"], a["status"]],
                          ["warn", "rid-auth", "POST", "/login", 401])
         e = rows[2]
-        self.assertEqual(list(e), HEAD + ["req_id", "method", "route", "err"])
-        self.assertEqual([e["level"], e["req_id"], e["method"], e["route"]], ["error", "rid-err", "POST", "/words"])
+        self.assertEqual(list(e), HEAD + ["req_id", "method", "route", "status", "dur_ms", "err"])
+        self.assertEqual([e["level"], e["req_id"], e["method"], e["route"], e["status"]],
+                         ["error", "rid-err", "POST", "/words", 200])
+        self.assertIsInstance(e["dur_ms"], (int, float))
         self.assertEqual(list(e["err"]), ["type", "message", "stack"])
         self.assertEqual(e["err"]["type"], "UnicodeDecodeError")
         self.assertTrue(e["err"]["stack"].startswith("UnicodeDecodeError: "))
