@@ -99,5 +99,18 @@ code 200 -X DELETE -u "$USERPASS" "$BASE/reload"
 step "no tracebacks in logs"
 if dk logs "$NAME" 2>&1 | grep -E 'Traceback|Error:'; then fail "errors in container log"; fi
 
+step "logs: stdout is only standard JSON lines (hosh-management AGENTS.md section 11), one startup line, nothing on stderr"
+dk logs "$NAME" 2>"$TMP/stderr" >"$TMP/stdout"
+[ ! -s "$TMP/stderr" ] || { cat "$TMP/stderr" >&2; fail "stderr is not empty"; }
+dk exec -i "$NAME" python -c '
+import json, sys
+rows = [json.loads(l) for l in sys.stdin.read().splitlines()]
+assert all(list(r)[:6] == ["ts", "level", "service", "version", "event", "msg"] and r["service"] == "wordwave" for r in rows), rows
+starts = [r for r in rows if r["event"] == "startup"]
+assert len(starts) == 1 and starts[0]["word_log"] and starts[0]["web_builds"], starts
+assert not any(r["level"] == "error" for r in rows), rows
+' <"$TMP/stdout" || { cat "$TMP/stdout" >&2; fail "log lines"; }
+if grep -E 'smoke-pass-not-secret|bonjour|127\.0\.0\.1|172\.1[67]\.' "$TMP/stdout"; then fail "a credential, posted words or an address in the log"; fi
+
 SMOKE_OK=1
 echo "SMOKE OK ($IMAGE)"

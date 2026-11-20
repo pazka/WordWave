@@ -49,7 +49,7 @@ the guard rejects `node:24.21.0-alpine` (the test of the test). Node base images
 
 ## What is covered
 
-`COMServer/tests/test_server.py` (15 tests):
+`COMServer/tests/test_server.py` (19 tests):
 - Basic auth on every write route (`/login`, `POST /words`, `/words/exclude`, `DELETE /words`, `/reload`).
 - Word flow: normalisation, stop words, plural folding, counts, meta, `new_text` / `reset` / `reload`
   Socket.IO broadcasts, every open-data endpoint (`/words/current…`, `csv_count`, `stop`).
@@ -84,6 +84,40 @@ volume kept) and the log read back. Both modes also check `/healthz` and the ima
 (login form fields/route/Basic auth, manual text + exclude-word sending, reset/reload of the visuals,
 speech-recognition controls, downloads, `/info`), by visible text, field names and REST routes. Runs in
 the CI `front builds` job (on `Speech2TextWeb/build`) and in the smoke. Passes on the pre-upgrade bundle.
+
+## Logs (`COMServer/tests/test_log.py`, 11 tests; hosh-management AGENTS.md §11)
+
+`COMServer/jsonlog.py` (standard library only) writes one JSON object per line on stdout: `ts` (UTC, ms), `level`,
+`service` (`wordwave`), `version` (`APP_VERSION`, set from the release tag by `release.yml` through the Dockerfile
+`ARG VERSION`; `dev` otherwise), `event`, `msg`, then the line's fields. `LOG_LEVEL` (else `APP_LOG_LEVEL`) sets
+the level, default `info`. At info the server writes only:
+- `startup`, BEFORE the blocking run (the old `print` came after it and never showed): port, `data_dir_writable`,
+  `word_log`, `web_builds`, `log_level`, and the NAMES of the configuration that is set (never a value or a path);
+- `shutdown` on SIGTERM (what `docker stop` sends) and SIGINT, then exit 0. The handler is installed before the run
+  (it used to come after it, so it was never set). `docker stop` is now immediate instead of the 10 s kill;
+- `request_failed` (error) for a status >= 500, with `err` when an exception caused it; `auth_failed` (warn) for a
+  4xx on `/login`, `/words`, `/words/exclude`, `/reload`; `request_slow` (warn) above 1 s; every other request and
+  `/healthz` only at debug. Request fields: `req_id` (`X-Request-Id` kept when it is a plain token of at most 64
+  characters, generated otherwise, returned in the answer), `method`, `route` (the Flask rule, never the raw
+  path or query), `status`, `dur_ms`;
+- `route_error` (error) for an exception caught by `wrap_errors`: the client still gets the same error body as
+  before (known quirk below), the log gets `req_id`, `method`, `route` and `err` (type, message, stack frames, no
+  word "Traceback") with the credentials and the request body replaced by `<hidden>`. It replaces the ANSI
+  coloured `print` of the traceback.
+
+Werkzeug's access log (IP + raw path on stderr) and Flask's banner and exception print are off. Never logged: the
+words people send, credentials, IPs, raw paths or query strings.
+
+Tests: the line format, level filtering and `LOG_LEVEL`/`APP_LOG_LEVEL`, config names without values, `err`
+(hidden words, frames), request ids; the request-line rules on a small Flask app (a 500 with `err` and no path,
+query, body or secret; auth 4xx and slow at warn; healthz, 404 and the rest silent at info, by route at debug);
+the real `app.py` with the production config shape in a subprocess: the startup line (`assertEqual` on its keys
+and values), a wrong password (401, one `auth_failed` line), a non-UTF-8 word post caught by `wrap_errors` (same
+error body for the client, one `route_error` line), a word post and the open data silent, `X-Request-Id` echoed or
+generated, SIGTERM and SIGINT each writing one `shutdown` line and exiting 0, every stdout line a standard JSON
+line, no credential, posted word, query, address, path or ANSI colour in stdout, no access log on stderr.
+`scripts/smoke.sh` checks the built image the same way (stdout only JSON lines, one startup line with
+`word_log`/`web_builds` true, no error line, nothing on stderr, no credential, posted word or address).
 
 ## Visual use cases (visual regression, hosh-management AGENTS.md §3)
 
