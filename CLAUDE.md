@@ -15,7 +15,7 @@ logs in `/`) until the one-time cutover to **hosh-deploy** (`docker-compose.exam
 
 ## Maintenance (autonomous agent)
 Goal: keep base images, dependencies and Actions current **without changing behaviour**.
-- **Gate = `ci` green**: `server tests (python 3.11|3.14)`, `front builds (node 26)`, `container smoke` (incl. the Node
+- **Gate = `ci` green**: `server tests (python 3.11|3.14|3.15)`, `front builds (node 26)`, `container smoke` (incl. the Node
   version guardrail `scripts/check-node-version.sh` on the build stages and both compat modes).
 - **Branches**: work on `agent/<topic>` (CI runs without a PR). Never push to `main`: `build-scan-push.yml` and
   `release.yml` publish images from `main`/tags (`deploy.yml` deploys releases). Never tag. **The owner merges.**

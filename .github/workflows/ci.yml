@@ -16,11 +16,11 @@ jobs:
     name: server tests (python ${{ matrix.python }})
     runs-on: ubuntu-latest
     container: python:${{ matrix.python }}-slim
-    # 3.14 = the image; 3.11 kept as the previous runtime. Both are gates.
+    # 3.15 = the image; 3.14 and 3.11 kept as the previous runtimes. All are gates.
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.11', '3.14']
+        python: ['3.11', '3.14', '3.15']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: pip install --no-cache-dir -r COMServer/requirements.txt

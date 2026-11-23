@@ -7,7 +7,7 @@ it pins what WordWave does today so a Dependabot PR can be judged on its CI run.
 
 | part | runtime | what ships |
 |---|---|---|
-| `COMServer/` | Python 3.14 (`python:3.14-slim`) | Flask + Flask-SocketIO server, the whole image runtime |
+| `COMServer/` | Python 3.15 (`python:3.15-slim`) | Flask + Flask-SocketIO server, the whole image runtime |
 | `WordWaveWeb/` | Node 26 build stage | three.js word cloud → `static/data.html` |
 | `Speech2TextWeb/` | Node 26 build stage | CRA admin → `static/admin.html` and `static/index.html` |
 | `WordWave/` (Unity), `Speech2Text/` (desktop) | — | not in the image, not tested |
@@ -34,14 +34,13 @@ bash scripts/smoke.sh wordwave:next
 
 ## CI (`.github/workflows/ci.yml`)
 
-PRs, `main`, `agent/**`. Jobs: `server tests (python 3.11)` (gate) and `(python 3.14)` (early warning,
-non-blocking); `front builds (node 26)`; `visual regression` (section "Visual use cases"); `container smoke` (builds the real Dockerfile, runs
+PRs, `main`, `agent/**`. Jobs: `server tests (python 3.11|3.14|3.15)` (all gates; 3.15 = the image); `front builds (node 26)`; `visual regression` (section "Visual use cases"); `container smoke` (builds the real Dockerfile, runs
 `scripts/smoke.sh`). A Dependabot PR that bumps a base image builds that base in `container smoke`.
 
 **Node guardrail** (pazka/hosh-management#5, CVE-2026-111497): `scripts/check-node-version.sh IMAGE`
 fails if the image's Node is an EOL line or below the patched minimum of its line (minimums bumped by
 the daily security routine). Node only exists in the two front build stages (the runtime is
-`python:3.14-slim`), so `container smoke`, `release.yml` and `build-scan-push` build `--target
+`python:3.15-slim`), so `container smoke`, `release.yml` and `build-scan-push` build `--target
 wordwave-web` / `--target admin-web` and check them, before anything is pushed. `container smoke` also
 asserts that the runtime image has no `node` (if it ever does, check the runtime image too) and that
 the guard rejects `node:24.21.0-alpine` (the test of the test). Node base images are pinned
@@ -238,3 +237,9 @@ anti-aliasing: `report.json` and the log say when the baselines were made with a
 - `react-scripts build` fails with `CI=true` on existing lint warnings (BOMs, an unused variable); CI
   builds with `CI=false`, like the Docker build.
 - Flask's development server (Werkzeug) serves production.
+
+## Python 3.15 (2026-11-23)
+
+- **Server image on `python:3.15-slim`** (supersedes Dependabot #42). No pin in `COMServer/requirements.txt`
+  changes: every package installs on 3.15.2 as pinned. 35/35 server tests on 3.15.2, with the same warnings as
+  on 3.14.10 (`-W default`). The CI matrix gains 3.15 and keeps 3.11 and 3.14.
