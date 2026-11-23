@@ -47,8 +47,8 @@ def init_config(config_path):
             f"The config file could not be JSON parsed") from e
 
     def __try_parse_env_var_from_config(varname):
-        if re.match('^\$\{(.*)\}$', varname):
-            env_var_name = re.findall('^\$\{(.*)\}$', varname)[0]
+        if re.match(r'^\$\{(.*)\}$', varname):
+            env_var_name = re.findall(r'^\$\{(.*)\}$', varname)[0]
             try:
                 return os.environ[env_var_name]
             except Exception as e:
@@ -103,7 +103,7 @@ def get_config(key=""):
     global __config
     global __conf_name
 
-    if key.strip() != "" and re.match('(\w\.?)*', key) is None:
+    if key.strip() != "" and re.match(r'(\w\.?)*', key) is None:
         raise KeyError("The key must be in the format 'key.key1.key2'")
 
     val = __config

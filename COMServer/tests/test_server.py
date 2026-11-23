@@ -59,6 +59,29 @@ class ServerTest(unittest.TestCase):
     def post_words(self, text=SENTENCE):
         return self.client.post("/words", data=text.encode("utf-8"), headers=AUTH)
 
+    def test_route_error_log_hides_the_configured_credentials_and_the_posted_words(self):
+        # ServerCom wires jsonlog with the configured login, password and session secret: an error whose message
+        # carries them and the posted text is logged as <hidden> (the client body is unchanged: see TESTING.md).
+        import io
+        import jsonlog
+
+        def leaky(text):
+            raise RuntimeError(f"test-user test-password test-secret refused {text}")
+        ServerCom.word_processor.register_text = leaky
+        out, old = io.StringIO(), jsonlog.LOG.stream
+        jsonlog.LOG.stream = out
+        try:
+            r = self.post_words("Bonjour les chats prives")
+        finally:
+            jsonlog.LOG.stream = old
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("RuntimeError", r.get_json()["error"])
+        rows = [json.loads(l) for l in out.getvalue().splitlines()]
+        self.assertEqual([(x["event"], x["route"], x["status"]) for x in rows], [("route_error", "/words", 200)])
+        self.assertEqual(rows[0]["err"]["message"], "<hidden> <hidden> <hidden> refused <hidden>")
+        for s in ("test-user", "test-password", "test-secret", "Bonjour"):
+            self.assertNotIn(s, out.getvalue(), s)
+
     # ---------------------------------------------------------------- auth
 
     def test_write_routes_require_basic_auth(self):
