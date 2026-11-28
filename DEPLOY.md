@@ -130,7 +130,7 @@ Read-only; never `POST /words` on the live site (it reaches the installation's w
 
 | Item | Value |
 |---|---|
-| Image | `ghcr.io/pazka/wordwave:vX.Y.Z` (Python 3.14 / Flask 3 + Flask-SocketIO; Node only in build stages) |
+| Image | `ghcr.io/pazka/wordwave:vX.Y.Z` (Python 3.15 / Flask 3 + Flask-SocketIO; Node only in build stages) |
 | Upstream | container :8000 → `127.0.0.1:9140` |
 | Edge | `/root/hosh-deploy/edge/traefik/dynamic/wordwave.yml` (router `wordwave@file`, resolver `le`, HSTS) |
 | Volume | `wordwave-data` → `/data` (in the monthly restic golden backup) |
